@@ -1,85 +1,129 @@
 'use client'
+import { useState } from 'react'
 
 const USERS = [
-  { nom: 'Youssef El Mansouri', email: 'y.mansouri@avenir-fes.ma', role: 'Directeur', centre: 'Avenir Fès', statut: 'Actif', dernierLogin: 'Auj. 09:41' },
-  { nom: 'Laila Bennouna', email: 'l.bennouna@avenir-fes.ma', role: 'Opérateur', centre: 'Avenir Fès', statut: 'Actif', dernierLogin: 'Auj. 08:15' },
-  { nom: 'Karim Alaoui', email: 'k.alaoui@avenir-fes.ma', role: 'Formateur', centre: 'Avenir Fès', statut: 'Actif', dernierLogin: 'Hier 18:30' },
-  { nom: 'Ahmed Cherkaoui', email: 'a.cherkaoui@gmail.com', role: 'Participant', centre: 'Avenir Fès', statut: 'Actif', dernierLogin: 'Auj. 10:02' },
-  { nom: 'Sara Benali', email: 's.benali@gmail.com', role: 'Participant', centre: 'Avenir Fès', statut: 'Actif', dernierLogin: 'Il y a 2j' },
-  { nom: 'Mohammed Idrissi', email: 'm.idrissi@lingua.ma', role: 'Directeur', centre: 'Centre Lingua Rabat', statut: 'Actif', dernierLogin: 'Auj. 07:55' },
-  { nom: 'Nadia Chraibi', email: 'n.chraibi@lingua.ma', role: 'Opérateur', centre: 'Centre Lingua Rabat', statut: 'Inactif', dernierLogin: 'Il y a 5j' },
-  { nom: 'Super Admin', email: 'admin@eduos.ma', role: 'Admin', centre: '—', statut: 'Actif', dernierLogin: 'Auj. 11:00' },
+  { nom: 'Youssef El Mansouri', email: 'y.mansouri@avenir-fes.ma', role: 'Directeur', centre: 'Avenir Fès', statut: 'Actif', login: 'Auj. 09:41', initials: 'YM' },
+  { nom: 'Laila Bennouna', email: 'l.bennouna@avenir-fes.ma', role: 'Opérateur', centre: 'Avenir Fès', statut: 'Actif', login: 'Auj. 08:15', initials: 'LB' },
+  { nom: 'Karim Alaoui', email: 'k.alaoui@avenir-fes.ma', role: 'Formateur', centre: 'Avenir Fès', statut: 'Actif', login: 'Hier 18:30', initials: 'KA' },
+  { nom: 'Ahmed Cherkaoui', email: 'a.cherkaoui@gmail.com', role: 'Participant', centre: 'Avenir Fès', statut: 'Actif', login: 'Auj. 10:02', initials: 'AC' },
+  { nom: 'Sara Benali', email: 's.benali@gmail.com', role: 'Participant', centre: 'Avenir Fès', statut: 'Actif', login: 'Il y a 2j', initials: 'SB' },
+  { nom: 'Mohammed Idrissi', email: 'm.idrissi@lingua.ma', role: 'Directeur', centre: 'Lingua Rabat', statut: 'Actif', login: 'Auj. 07:55', initials: 'MI' },
+  { nom: 'Nadia Chraibi', email: 'n.chraibi@lingua.ma', role: 'Opérateur', centre: 'Lingua Rabat', statut: 'Inactif', login: 'Il y a 5j', initials: 'NC' },
+  { nom: 'Super Admin', email: 'admin@eduos.ma', role: 'Admin', centre: '—', statut: 'Actif', login: 'Auj. 11:00', initials: 'SA' },
 ]
 
-const ROLE_STYLES: Record<string, { color: string; bg: string }> = {
-  'Directeur': { color: '#1B3A6B', bg: 'rgba(27,58,107,.08)' },
-  'Opérateur': { color: '#059669', bg: 'rgba(5,150,105,.08)' },
-  'Formateur': { color: '#7C3AED', bg: 'rgba(124,58,237,.07)' },
-  'Participant': { color: '#C9922A', bg: 'rgba(201,146,42,.1)' },
-  'Admin': { color: '#DC2626', bg: 'rgba(220,38,38,.07)' },
+const ROLE_BADGE: Record<string, string> = {
+  Directeur: 'badge-navy',
+  Opérateur: 'badge-green',
+  Formateur: 'badge-purple',
+  Participant: 'badge-gold',
+  Admin: 'badge-red',
 }
 
+const FILTERS = ['Tous', 'Directeur', 'Opérateur', 'Formateur', 'Participant', 'Admin']
+
 export default function UtilisateursPage() {
+  const [filter, setFilter] = useState('Tous')
+  const [search, setSearch] = useState('')
+
+  const filtered = USERS.filter(u =>
+    (filter === 'Tous' || u.role === filter) &&
+    (u.nom.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase()))
+  )
+
   return (
-    <div style={{ padding: '36px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 }}>
-        <div>
-          <h1 style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 900, fontSize: '1.6rem', color: '#1a1823', marginBottom: 4 }}>Utilisateurs</h1>
-          <p style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: '.88rem', color: '#64748b' }}>Gérez tous les comptes utilisateurs de la plateforme</p>
+    <div>
+      {/* ── Page header ── */}
+      <div className="page-header">
+        <div className="page-header-left">
+          <div className="page-breadcrumb">
+            <span>Admin</span>
+            <span className="page-breadcrumb-sep">›</span>
+            <span style={{ color: '#1B3A6B' }}>Utilisateurs</span>
+          </div>
+          <h1 className="page-title">Utilisateurs</h1>
+          <p className="page-subtitle">Gérez tous les comptes de la plateforme · {USERS.length} comptes</p>
         </div>
-        <button style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '11px 20px', background: '#1B3A6B', color: '#fff', border: 'none', borderRadius: 10, fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 700, fontSize: '.85rem', cursor: 'pointer' }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Nouvel utilisateur
-        </button>
+        <div className="page-header-actions">
+          <button className="btn btn-primary btn-sm">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nouvel utilisateur
+          </button>
+        </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
-        <input placeholder="Rechercher un utilisateur…" style={{ padding: '9px 14px', borderRadius: 9, border: '1.5px solid #E2D9CC', fontFamily: "'Inter', system-ui, sans-serif", fontSize: '.84rem', outline: 'none', width: 300, background: '#fff' }} />
-        {['Tous', 'Directeur', 'Opérateur', 'Formateur', 'Participant', 'Admin'].map(r => (
-          <button key={r} style={{ padding: '8px 14px', borderRadius: 8, border: '1.5px solid #E2D9CC', background: r === 'Tous' ? '#1B3A6B' : '#fff', color: r === 'Tous' ? '#fff' : '#64748b', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 600, fontSize: '.75rem', cursor: 'pointer' }}>{r}</button>
-        ))}
+      {/* ── Filters ── */}
+      <div className="card card-p" style={{ marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <div className="search-wrap">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input
+              className="search-input"
+              placeholder="Rechercher un utilisateur…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginLeft: 8 }}>
+            {FILTERS.map(f => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`btn btn-sm ${filter === f ? 'btn-primary' : 'btn-ghost'}`}
+              >{f}</button>
+            ))}
+          </div>
+          <div style={{ marginLeft: 'auto' }}>
+            <span className="card-meta">{filtered.length} résultat{filtered.length > 1 ? 's' : ''}</span>
+          </div>
+        </div>
       </div>
 
-      <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2D9CC', overflow: 'hidden', boxShadow: '0 2px 12px rgba(27,58,107,.04)' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ background: '#faf8f5', borderBottom: '1px solid #E2D9CC' }}>
-              {['Nom', 'Email', 'Rôle', 'Centre', 'Statut', 'Dernier accès', 'Actions'].map(h => (
-                <th key={h} style={{ padding: '12px 18px', textAlign: 'left', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 700, fontSize: '.72rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '.05em' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {USERS.map((u, i) => {
-              const { color, bg } = ROLE_STYLES[u.role] ?? { color: '#64748b', bg: '#f1f5f9' }
-              return (
-                <tr key={i} style={{ borderBottom: i < USERS.length - 1 ? '1px solid #f1ede8' : 'none', transition: 'background .15s' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = '#faf8f5')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                  <td style={{ padding: '13px 18px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div style={{ width: 34, height: 34, borderRadius: '50%', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 700, fontSize: '.82rem', color, flexShrink: 0 }}>{u.nom.charAt(0)}</div>
-                      <span style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 700, fontSize: '.88rem', color: '#1a1823' }}>{u.nom}</span>
+      {/* ── Table ── */}
+      <div className="card">
+        <div className="data-table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Utilisateur</th>
+                <th>Rôle</th>
+                <th>Centre</th>
+                <th>Statut</th>
+                <th>Dernier accès</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((u, i) => (
+                <tr key={i}>
+                  <td>
+                    <div className="row">
+                      <div className="avatar avatar-sm avatar-navy">{u.initials}</div>
+                      <div>
+                        <div className="list-item-title">{u.nom}</div>
+                        <div className="list-item-sub">{u.email}</div>
+                      </div>
                     </div>
                   </td>
-                  <td style={{ padding: '13px 18px', fontFamily: "'Inter', system-ui, sans-serif", fontSize: '.83rem', color: '#64748b' }}>{u.email}</td>
-                  <td style={{ padding: '13px 18px' }}><span style={{ display: 'inline-flex', padding: '3px 11px', borderRadius: 99, background: bg, color, fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 700, fontSize: '.72rem' }}>{u.role}</span></td>
-                  <td style={{ padding: '13px 18px', fontFamily: "'Inter', system-ui, sans-serif", fontSize: '.83rem', color: '#64748b' }}>{u.centre}</td>
-                  <td style={{ padding: '13px 18px' }}>
-                    <span style={{ display: 'inline-flex', padding: '3px 11px', borderRadius: 99, background: u.statut === 'Actif' ? 'rgba(5,150,105,.08)' : '#f1f5f9', color: u.statut === 'Actif' ? '#059669' : '#64748b', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 700, fontSize: '.72rem' }}>{u.statut}</span>
+                  <td><span className={`badge ${ROLE_BADGE[u.role] ?? 'badge-gray'}`}>{u.role}</span></td>
+                  <td style={{ color: '#5A6B7D' }}>{u.centre}</td>
+                  <td>
+                    <span className={`badge ${u.statut === 'Actif' ? 'badge-green' : 'badge-gray'}`}>
+                      {u.statut}
+                    </span>
                   </td>
-                  <td style={{ padding: '13px 18px', fontFamily: "'Inter', system-ui, sans-serif", fontSize: '.82rem', color: '#94a3b8' }}>{u.dernierLogin}</td>
-                  <td style={{ padding: '13px 18px' }}>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <button style={{ padding: '5px 10px', borderRadius: 7, border: '1px solid #E2D9CC', background: '#fff', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 600, fontSize: '.72rem', color: '#1B3A6B', cursor: 'pointer' }}>Éditer</button>
-                      <button style={{ padding: '5px 10px', borderRadius: 7, border: '1px solid #fecaca', background: '#fff', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 600, fontSize: '.72rem', color: '#DC2626', cursor: 'pointer' }}>Désactiver</button>
+                  <td style={{ color: '#9AABBC', fontSize: '.78rem' }}>{u.login}</td>
+                  <td>
+                    <div className="row" style={{ gap: 6 }}>
+                      <button className="btn btn-ghost btn-sm">Éditer</button>
+                      <button className="btn btn-sm" style={{ background: 'rgba(220,38,38,.07)', color: '#DC2626', border: 'none' }}>Désactiver</button>
                     </div>
                   </td>
                 </tr>
-              )
-            })}
-          </tbody>
-        </table>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   )

@@ -1,81 +1,37 @@
 'use client'
 
-const NAVY = '#1B3A6B'
-const GOLD = '#C9922A'
-
-const CARD_STYLE = {
-  background: '#fff',
-  borderRadius: 12,
-  padding: '24px',
-  boxShadow: '0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(27,58,107,.06)',
-  border: '1px solid rgba(27,58,107,.07)',
-}
-
 const STAT_CARDS = [
   {
-    label: 'Élèves inscrits',
-    value: '347',
-    trend: '+12 ce mois',
-    trendColor: '#059669',
-    trendBg: 'rgba(5,150,105,.1)',
-    iconBg: 'rgba(27,58,107,.1)',
-    iconColor: NAVY,
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
-      </svg>
-    ),
+    label: 'Élèves inscrits', value: '347', trend: '+12 ce mois',
+    trendClass: 'badge-green',
+    iconBg: 'rgba(27,58,107,.1)', iconColor: '#1B3A6B',
+    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
   },
   {
-    label: 'CA encaissé (mois)',
-    value: '84 200 DH',
-    trend: '+8.4% vs mois dernier',
-    trendColor: '#059669',
-    trendBg: 'rgba(5,150,105,.1)',
-    iconBg: 'rgba(5,150,105,.1)',
-    iconColor: '#059669',
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-      </svg>
-    ),
+    label: 'CA encaissé (mois)', value: '84 200 DH', trend: '+8.4 %',
+    trendClass: 'badge-green',
+    iconBg: 'rgba(5,150,105,.1)', iconColor: '#059669',
+    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
   },
   {
-    label: 'Mensualités en retard',
-    value: '23',
-    trend: '-3 vs semaine dernière',
-    trendColor: '#DC2626',
-    trendBg: 'rgba(220,38,38,.1)',
-    iconBg: 'rgba(220,38,38,.08)',
-    iconColor: '#DC2626',
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
-      </svg>
-    ),
+    label: 'Mensualités en retard', value: '23', trend: '-3 cette semaine',
+    trendClass: 'badge-red',
+    iconBg: 'rgba(220,38,38,.08)', iconColor: '#DC2626',
+    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
   },
   {
-    label: 'Présence globale',
-    value: '87%',
-    trend: 'Stable ce mois',
-    trendColor: '#64748b',
-    trendBg: 'rgba(100,116,139,.1)',
-    iconBg: 'rgba(201,146,42,.1)',
-    iconColor: GOLD,
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-      </svg>
-    ),
+    label: 'Présence globale', value: '87 %', trend: 'Stable',
+    trendClass: 'badge-gray',
+    iconBg: 'rgba(201,146,42,.1)', iconColor: '#C9922A',
+    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
   },
 ]
 
 const GROUPS = [
-  { name: 'Anglais B2', detail: '18/20 élèves', pct: 90 },
-  { name: 'Français A2 Soir', detail: '14/18 élèves', pct: 78 },
-  { name: 'Espagnol Débutant', detail: '11/15 élèves', pct: 73 },
-  { name: 'Maths Avancés', detail: '19/20 élèves', pct: 95 },
+  { name: 'Anglais B2', detail: '18 / 20 élèves', pct: 90, fill: 'progress-fill-gold' },
+  { name: 'Français A2 Soir', detail: '14 / 18 élèves', pct: 78, fill: '' },
+  { name: 'Espagnol Débutant', detail: '11 / 15 élèves', pct: 73, fill: '' },
+  { name: 'Maths Avancés', detail: '19 / 20 élèves', pct: 95, fill: 'progress-fill-gold' },
 ]
 
 const RENEWALS = [
@@ -87,115 +43,125 @@ const RENEWALS = [
 ]
 
 const ABSENCES = [
-  { name: 'Omar Belhaj', group: 'Anglais B2', time: '10h00' },
-  { name: 'Yasmine Alami', group: 'Anglais B2', time: '10h00' },
-  { name: 'Rachid El Fassi', group: 'Français A2', time: '17h00' },
-  { name: 'Fatima Zahra', group: 'Espagnol Déb.', time: '14h00' },
+  { name: 'Omar Belhaj', group: 'Anglais B2', time: '10h00', initials: 'OB' },
+  { name: 'Yasmine Alami', group: 'Anglais B2', time: '10h00', initials: 'YA' },
+  { name: 'Rachid El Fassi', group: 'Français A2', time: '17h00', initials: 'RE' },
+  { name: 'Fatima Zahra', group: 'Espagnol Déb.', time: '14h00', initials: 'FZ' },
 ]
 
 const FORMATEURS = [
-  { name: 'Karim Alaoui', spec: 'Anglais', heures: 32, taux: 120, statut: 'Payé' },
-  { name: 'Leila Bennouna', spec: 'Français', heures: 24, taux: 110, statut: 'En attente' },
-  { name: 'Omar El Fassi', spec: 'Espagnol', heures: 20, taux: 100, statut: 'Payé' },
-  { name: 'Sanaa Tahiri', spec: 'Management', heures: 28, taux: 130, statut: 'En attente' },
+  { name: 'Karim Alaoui', initials: 'KA', spec: 'Anglais', heures: 32, taux: 120, paid: true },
+  { name: 'Leila Bennouna', initials: 'LB', spec: 'Français', heures: 24, taux: 110, paid: false },
+  { name: 'Omar El Fassi', initials: 'OE', spec: 'Espagnol', heures: 20, taux: 100, paid: true },
+  { name: 'Sanaa Tahiri', initials: 'ST', spec: 'Management', heures: 28, taux: 130, paid: false },
 ]
 
-function DaysTag({ days }: { days: number }) {
-  const color = days < 7 ? '#DC2626' : days < 14 ? '#C9922A' : '#059669'
-  const bg = days < 7 ? 'rgba(220,38,38,.1)' : days < 14 ? 'rgba(201,146,42,.1)' : 'rgba(5,150,105,.1)'
-  return (
-    <span style={{ fontSize: 11, fontWeight: 700, color, background: bg, borderRadius: 99, padding: '2px 9px', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-      {days}j
-    </span>
-  )
+function DaysBadge({ days }: { days: number }) {
+  const cls = days < 7 ? 'badge-red' : days < 14 ? 'badge-gold' : 'badge-green'
+  return <span className={`badge ${cls}`}>{days}j</span>
 }
 
 export default function DirecteurDashboard() {
   return (
     <div>
-      {/* Page header */}
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 900, fontSize: 26, color: '#0F2347', marginBottom: 4 }}>
-          Tableau de bord
-        </h1>
-        <p style={{ fontSize: 13.5, color: '#64748b' }}>Vendredi 25 juillet 2025 · Vue d'ensemble de votre centre de formation</p>
+      {/* ── Page header ── */}
+      <div className="page-header">
+        <div className="page-header-left">
+          <div className="page-breadcrumb">
+            <span>EDUOS</span>
+            <span className="page-breadcrumb-sep">›</span>
+            <span>Direction</span>
+            <span className="page-breadcrumb-sep">›</span>
+            <span style={{ color: '#1B3A6B' }}>Dashboard</span>
+          </div>
+          <h1 className="page-title">Tableau de bord</h1>
+          <p className="page-subtitle">Vendredi 25 juillet 2025 · Vue d'ensemble de votre centre</p>
+        </div>
+        <div className="page-header-actions">
+          <button className="btn btn-ghost btn-sm">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exporter
+          </button>
+          <button className="btn btn-primary btn-sm">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nouvelle action
+          </button>
+        </div>
       </div>
 
-      {/* Row 1 — KPI stat cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 18, marginBottom: 22 }}>
-        {STAT_CARDS.map((card) => (
-          <div key={card.label} style={{ ...CARD_STYLE }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
-              <div style={{ width: 44, height: 44, borderRadius: 11, background: card.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: card.iconColor }}>
-                {card.icon}
+      {/* ── KPI cards ── */}
+      <div className="kpi-grid">
+        {STAT_CARDS.map(c => (
+          <div key={c.label} className="kpi-card">
+            <div className="kpi-top">
+              <div className="kpi-icon" style={{ background: c.iconBg, color: c.iconColor }}>
+                {c.icon}
               </div>
-              <span style={{ fontSize: 11, fontWeight: 700, color: card.trendColor, background: card.trendBg, borderRadius: 99, padding: '3px 10px', fontFamily: "'Plus Jakarta Sans', sans-serif", whiteSpace: 'nowrap' }}>
-                {card.trend}
-              </span>
+              <span className={`badge ${c.trendClass}`}>{c.trend}</span>
             </div>
-            <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 900, fontSize: 28, color: '#0F2347', letterSpacing: '-0.5px', lineHeight: 1 }}>{card.value}</div>
-            <div style={{ fontSize: 13, color: '#64748b', marginTop: 6 }}>{card.label}</div>
+            <div className="kpi-value">{c.value}</div>
+            <div className="kpi-label">{c.label}</div>
           </div>
         ))}
       </div>
 
-      {/* Row 2 — 3 cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 18, marginBottom: 22 }}>
+      {/* ── Section grid ── */}
+      <div className="section-grid-3">
         {/* Groupes actifs */}
-        <div style={{ ...CARD_STYLE }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
-            <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: 14, color: '#0F2347' }}>Groupes actifs</h2>
-            <span style={{ fontSize: 11, color: '#64748b' }}>4 groupes</span>
+        <div className="card card-p">
+          <div className="card-header">
+            <h2 className="card-title">Groupes actifs</h2>
+            <span className="card-meta">4 groupes</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {GROUPS.map((g) => (
+            {GROUPS.map(g => (
               <div key={g.name}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-                  <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 600, fontSize: 13, color: '#1a1823' }}>{g.name}</span>
-                  <span style={{ fontSize: 12, color: '#64748b' }}>{g.detail}</span>
+                <div className="row-between" style={{ marginBottom: 6 }}>
+                  <span className="list-item-title">{g.name}</span>
+                  <span className="card-meta">{g.detail}</span>
                 </div>
-                <div style={{ height: 7, borderRadius: 4, background: 'rgba(27,58,107,.08)', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${g.pct}%`, borderRadius: 4, background: g.pct >= 90 ? GOLD : NAVY, transition: 'width .5s ease' }} />
+                <div className="progress-bar">
+                  <div className={`progress-fill ${g.fill}`} style={{ width: `${g.pct}%` }} />
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Renouvellements à venir */}
-        <div style={{ ...CARD_STYLE }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
-            <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: 14, color: '#0F2347' }}>Renouvellements</h2>
-            <span style={{ fontSize: 11, color: '#64748b' }}>5 à venir</span>
+        {/* Renouvellements */}
+        <div className="card card-p">
+          <div className="card-header">
+            <h2 className="card-title">Renouvellements</h2>
+            <span className="badge badge-gold">5 à venir</span>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-            {RENEWALS.map((r, i) => (
-              <div key={r.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: i < RENEWALS.length - 1 ? '1px solid rgba(27,58,107,.06)' : 'none' }}>
-                <div>
-                  <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 600, fontSize: 13, color: '#1a1823' }}>{r.name}</div>
-                  <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 1 }}>Expire le {r.date}</div>
+          <div>
+            {RENEWALS.map(r => (
+              <div key={r.name} className="list-item">
+                <div style={{ flex: 1 }}>
+                  <div className="list-item-title">{r.name}</div>
+                  <div className="list-item-sub">Expire le {r.date}</div>
                 </div>
-                <DaysTag days={r.days} />
+                <DaysBadge days={r.days} />
               </div>
             ))}
           </div>
         </div>
 
-        {/* Absences du jour */}
-        <div style={{ ...CARD_STYLE }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
-            <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: 14, color: '#0F2347' }}>Absences du jour</h2>
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#DC2626', background: 'rgba(220,38,38,.1)', borderRadius: 99, padding: '2px 9px', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>4</span>
+        {/* Absences */}
+        <div className="card card-p">
+          <div className="card-header">
+            <h2 className="card-title">Absences du jour</h2>
+            <span className="badge badge-red">4</span>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-            {ABSENCES.map((a, i) => (
-              <div key={a.name} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: i < ABSENCES.length - 1 ? '1px solid rgba(27,58,107,.06)' : 'none' }}>
-                <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'rgba(220,38,38,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: 12, color: '#DC2626', flexShrink: 0 }}>
-                  {a.name.charAt(0)}
+          <div>
+            {ABSENCES.map(a => (
+              <div key={a.name} className="list-item">
+                <div className="avatar avatar-sm" style={{ background: 'rgba(220,38,38,.12)', color: '#DC2626', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.7rem', width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  {a.initials}
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 600, fontSize: 13, color: '#1a1823', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.name}</div>
-                  <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 1 }}>{a.group} · {a.time}</div>
+                <div style={{ flex: 1 }}>
+                  <div className="list-item-title">{a.name}</div>
+                  <div className="list-item-sub">{a.group} · {a.time}</div>
                 </div>
               </div>
             ))}
@@ -203,51 +169,47 @@ export default function DirecteurDashboard() {
         </div>
       </div>
 
-      {/* Row 3 — Rémunération formateurs */}
-      <div style={{ ...CARD_STYLE }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+      {/* ── Formateurs table ── */}
+      <div className="card card-p">
+        <div className="card-header">
           <div>
-            <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: 15, color: '#0F2347', marginBottom: 3 }}>Rémunération formateurs</h2>
-            <p style={{ fontSize: 12.5, color: '#94a3b8' }}>Juillet 2025 — récapitulatif des heures et montants dus</p>
+            <h2 className="card-title">Rémunération formateurs</h2>
+            <p className="card-meta" style={{ marginTop: 2 }}>Juillet 2025 — récapitulatif heures et montants</p>
           </div>
-          <button style={{ padding: '8px 18px', borderRadius: 8, border: `1.5px solid ${NAVY}`, background: 'transparent', color: NAVY, fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: 12.5, cursor: 'pointer' }}>
+          <button className="btn btn-outline btn-sm">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             Exporter PDF
           </button>
         </div>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+
+        <div className="data-table-wrap">
+          <table className="data-table">
             <thead>
-              <tr style={{ background: '#F5F6F8' }}>
-                {['Formateur', 'Spécialité', 'Heures ce mois', 'Taux / heure', 'Montant dû', 'Statut'].map((h) => (
-                  <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: 11.5, color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', whiteSpace: 'nowrap', borderBottom: '1px solid rgba(27,58,107,.08)' }}>{h}</th>
+              <tr>
+                {['Formateur', 'Spécialité', 'Heures', 'Taux / h', 'Montant dû', 'Statut'].map(h => (
+                  <th key={h}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {FORMATEURS.map((f, i) => {
+              {FORMATEURS.map(f => {
                 const montant = f.heures * f.taux
-                const paid = f.statut === 'Payé'
                 return (
-                  <tr key={f.name} style={{ borderBottom: i < FORMATEURS.length - 1 ? '1px solid rgba(27,58,107,.05)' : 'none' }}>
-                    <td style={{ padding: '14px 16px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'rgba(27,58,107,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, fontSize: 12, color: NAVY }}>
-                          {f.name.split(' ').map(n => n[0]).join('')}
-                        </div>
-                        <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 600, fontSize: 13.5, color: '#1a1823' }}>{f.name}</span>
+                  <tr key={f.name}>
+                    <td>
+                      <div className="row">
+                        <div className="avatar avatar-sm avatar-navy">{f.initials}</div>
+                        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, color: '#1a2535' }}>{f.name}</span>
                       </div>
                     </td>
-                    <td style={{ padding: '14px 16px', fontSize: 13, color: '#64748b' }}>{f.spec}</td>
-                    <td style={{ padding: '14px 16px', fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: 14, color: '#1a1823' }}>{f.heures}h</td>
-                    <td style={{ padding: '14px 16px', fontSize: 13, color: '#64748b' }}>{f.taux} DH/h</td>
-                    <td style={{ padding: '14px 16px', fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, fontSize: 14, color: NAVY }}>{montant.toLocaleString('fr-FR')} DH</td>
-                    <td style={{ padding: '14px 16px' }}>
-                      <span style={{
-                        fontSize: 12, fontWeight: 700, fontFamily: "'Plus Jakarta Sans', sans-serif",
-                        color: paid ? '#059669' : '#C9922A',
-                        background: paid ? 'rgba(5,150,105,.1)' : 'rgba(201,146,42,.1)',
-                        borderRadius: 99, padding: '4px 12px',
-                      }}>{f.statut}</span>
+                    <td style={{ color: '#7A8CA0' }}>{f.spec}</td>
+                    <td style={{ fontFamily: 'var(--font-display)', fontWeight: 700 }}>{f.heures}h</td>
+                    <td style={{ color: '#7A8CA0' }}>{f.taux} DH/h</td>
+                    <td style={{ fontFamily: 'var(--font-display)', fontWeight: 800, color: '#1B3A6B' }}>{montant.toLocaleString('fr-FR')} DH</td>
+                    <td>
+                      <span className={`badge ${f.paid ? 'badge-green' : 'badge-gold'}`}>
+                        {f.paid ? 'Payé' : 'En attente'}
+                      </span>
                     </td>
                   </tr>
                 )
@@ -255,14 +217,15 @@ export default function DirecteurDashboard() {
             </tbody>
           </table>
         </div>
-        <div style={{ borderTop: '1px solid rgba(27,58,107,.07)', marginTop: 8, paddingTop: 16, display: 'flex', justifyContent: 'flex-end', gap: 32 }}>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 3 }}>Total heures</div>
-            <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, fontSize: 16, color: '#1a1823' }}>104h</div>
+
+        <div className="table-footer">
+          <div className="table-footer-item">
+            <div className="table-footer-label">Total heures</div>
+            <div className="table-footer-value">104h</div>
           </div>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 3 }}>Montant total dû</div>
-            <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 900, fontSize: 18, color: NAVY }}>12 440 DH</div>
+          <div className="table-footer-item">
+            <div className="table-footer-label">Montant total dû</div>
+            <div className="table-footer-value" style={{ color: '#1B3A6B', fontSize: '1.1rem' }}>12 440 DH</div>
           </div>
         </div>
       </div>

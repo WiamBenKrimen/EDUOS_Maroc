@@ -95,7 +95,8 @@ export default function OperateurLayout({ children }: { children: ReactNode }) {
         <div className="operator-user">
           <div className="operator-avatar">{initials}</div>
           <div><strong>{user?.nom ?? 'Opérateur EDUOS'}</strong><span>{user?.email ?? 'operateur@eduos.ma'}</span></div>
-          <LogoutButton color={NAVY} />
+          <LogoutButton />
+
         </div>
       </aside>
 

@@ -165,8 +165,12 @@ export default function RessourcesPage() {
 
       {filtered.length === 0 && (
         <div style={{ textAlign: 'center', padding: '60px 20px', color: '#94a3b8' }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>📂</div>
-          <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: 16, marginBottom: 6 }}>Aucune ressource</div>
+          <div style={{ width: 64, height: 64, borderRadius: 16, background: 'rgba(27,58,107,.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1B3A6B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.4">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
+          <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: 16, marginBottom: 6, color: '#374151' }}>Aucune ressource</div>
           <div style={{ fontSize: 13 }}>Aucune ressource de ce type n'est disponible pour le moment.</div>
         </div>
       )}

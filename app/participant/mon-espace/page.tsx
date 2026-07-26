@@ -15,9 +15,9 @@ const NOTIFS = [
 ]
 
 const DOCS = [
-  { name: 'Attestation de présence', type: 'PDF', date: '10 Jan 2025', icon: '📄' },
-  { name: 'Programme Anglais B2', type: 'PDF', date: '2 Jan 2025', icon: '📋' },
-  { name: 'Règlement intérieur', type: 'PDF', date: '1 Jan 2025', icon: '📜' },
+  { name: 'Attestation de présence', type: 'PDF', date: '10 Jan 2025', iconColor: '#7C3AED' },
+  { name: 'Programme Anglais B2', type: 'PDF', date: '2 Jan 2025', iconColor: '#1B3A6B' },
+  { name: 'Règlement intérieur', type: 'PDF', date: '1 Jan 2025', iconColor: '#C9922A' },
 ]
 
 export default function MonEspacePage() {
@@ -33,10 +33,11 @@ export default function MonEspacePage() {
             <span className="page-breadcrumb-sep">›</span>
             <span style={{ color: '#1B3A6B' }}>Mon espace</span>
           </div>
-          <h1 className="page-title">Bonjour, Yasmine 👋</h1>
+          <h1 className="page-title">Bonjour, Yasmine</h1>
           <p className="page-subtitle">Anglais B2 · Groupe du matin · Lundi 25 juillet 2025</p>
         </div>
-        <div className="page-header-actions">
+        <div className="page-header-actions" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg,#C9922A,#e8a83a)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '.8rem', color: '#fff', flexShrink: 0 }}>YB</div>
           <span className="badge badge-green">Formation en cours</span>
         </div>
       </div>
@@ -198,7 +199,12 @@ export default function MonEspacePage() {
               <tr key={d.name}>
                 <td>
                   <div className="row">
-                    <span style={{ fontSize: '1.1rem' }}>{d.icon}</span>
+                    <div style={{ width: 30, height: 30, borderRadius: 7, background: `${d.iconColor}14`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={d.iconColor} strokeWidth="1.8" strokeLinecap="round">
+                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                        <line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/>
+                      </svg>
+                    </div>
                     <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, color: '#1a2535' }}>{d.name}</span>
                   </div>
                 </td>

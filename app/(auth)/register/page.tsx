@@ -44,9 +44,16 @@ export default function RegisterPage() {
   return (
     <div className="auth-page">
       <div className="auth-card" style={{ maxWidth: 460 }}>
-        {/* Logo */}
-        <Link href="/" className="auth-logo" style={{ justifyContent: 'center', marginBottom: 24 }}>
-          <Image src="/images/logo.png" alt="EDUOS MAROC" width={160} height={52} style={{ height: 48, width: 'auto', objectFit: 'contain' }} priority />
+        {/* Logo plus grand et professionnel */}
+        <Link href="/" className="auth-logo">
+          <Image
+            src="/images/logo.png"
+            alt="EDUOS MAROC"
+            width={220}
+            height={70}
+            style={{ height: 62, width: 'auto', objectFit: 'contain' }}
+            priority
+          />
         </Link>
 
         <h1 className="auth-heading">Créer un compte</h1>

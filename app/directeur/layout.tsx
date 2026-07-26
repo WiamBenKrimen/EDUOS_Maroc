@@ -1,8 +1,10 @@
 'use client'
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ReactNode, useEffect, useState } from 'react'
 import LogoutButton from '../logout-button'
+
 
 const navItems = [
   {
@@ -101,16 +103,10 @@ export default function DirecteurLayout({ children }: { children: ReactNode }) {
       <aside className={`dir-sidebar${menuOpen ? ' is-open' : ''}`}>
         {/* Brand */}
         <div className="dir-brand">
-          <div className="dir-brand-mark">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-            </svg>
-          </div>
-          <div>
-            <div className="dir-brand-name">EDUOS</div>
-            <div className="dir-brand-role">Direction</div>
-          </div>
+          <Link href="/directeur" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+            <Image src="/images/logo.png" alt="EDUOS MAROC" width={115} height={38} style={{ height: 38, width: 'auto', objectFit: 'contain' }} priority />
+          </Link>
+          <span className="dir-brand-role" style={{ marginLeft: 'auto', background: 'rgba(27,58,107,.08)', color: '#1B3A6B', padding: '3px 8px', borderRadius: 6 }}>Direction</span>
         </div>
 
         {/* Nav */}

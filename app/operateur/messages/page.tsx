@@ -1,7 +1,8 @@
 'use client'
+
 import { useState } from 'react'
 
-const TICKETS = [
+const INITIAL_TICKETS = [
   { id: 1, nom: 'Ahmed Cherkaoui', sujet: "Absence au cours du 21 juillet", temps: 'Il y a 1h', statut: 'Ouvert', messages: [
     { from: 'Ahmed Cherkaoui', text: "Bonjour, je n'ai pas pu assister au cours du 21 juillet pour raison médicale. Est-ce que je peux récupérer le cours manqué ?", time: '10:23', own: false },
     { from: 'Opérateur', text: "Bonjour Ahmed ! Bien sûr, nous allons vous organiser une session de rattrapage. Pouvez-vous être disponible samedi matin ?", time: '10:45', own: true },
@@ -20,80 +21,227 @@ const TICKETS = [
   ]},
 ]
 
-const STATUS_MAP: Record<string, { color: string; bg: string }> = {
-  'Ouvert': { color: '#DC2626', bg: 'rgba(220,38,38,.07)' },
-  'En cours': { color: '#C9922A', bg: 'rgba(201,146,42,.1)' },
-  'Résolu': { color: '#059669', bg: 'rgba(5,150,105,.08)' },
-}
-
 export default function MessagesPage() {
+  const [tickets, setTickets] = useState(INITIAL_TICKETS)
   const [activeId, setActiveId] = useState(1)
-  const [reply, setReply] = useState('')
-  const active = TICKETS.find(t => t.id === activeId)!
+  const [replyText, setReplyText] = useState('')
+  const [search, setSearch] = useState('')
+  const [showNewModal, setShowNewModal] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
+
+  const [newTicket, setNewTicket] = useState({
+    nom: 'Ahmed Cherkaoui',
+    sujet: 'Rappel de document manquant',
+    text: 'Bonjour Ahmed, merci de nous transmettre votre photo d\'identité.'
+  })
+
+  const triggerToast = (msg: string) => {
+    setToastMessage(msg)
+    setTimeout(() => setToastMessage(''), 3500)
+  }
+
+  const active = tickets.find(t => t.id === activeId) ?? tickets[0]
+
+  const handleSendReply = () => {
+    if (!replyText.trim()) return
+    const now = new Date()
+    const timeStr = `${now.getHours()}:${now.getMinutes() < 10 ? '0' : ''}${now.getMinutes()}`
+    
+    setTickets(prev => prev.map(t => {
+      if (t.id === active.id) {
+        return {
+          ...t,
+          statut: 'En cours',
+          messages: [...t.messages, { from: 'Opérateur', text: replyText.trim(), time: timeStr, own: true }]
+        }
+      }
+      return t
+    }))
+    setReplyText('')
+    triggerToast('Message envoyé !')
+  }
+
+  const handleResolve = () => {
+    setTickets(prev => prev.map(t => t.id === active.id ? { ...t, statut: 'Résolu' } : t))
+    triggerToast('Ticket marqué comme Résolu !')
+  }
+
+  const handleCreateTicket = () => {
+    const created = {
+      id: Date.now(),
+      nom: newTicket.nom,
+      sujet: newTicket.sujet,
+      temps: 'À l\'instant',
+      statut: 'Ouvert',
+      messages: [{ from: 'Opérateur', text: newTicket.text, time: 'À l\'instant', own: true }]
+    }
+    setTickets(prev => [created, ...prev])
+    setActiveId(created.id)
+    setShowNewModal(false)
+    triggerToast(`Nouveau message envoyé à ${newTicket.nom} !`)
+  }
+
+  const filteredTickets = tickets.filter(t => t.nom.toLowerCase().includes(search.toLowerCase()) || t.sujet.toLowerCase().includes(search.toLowerCase()))
 
   return (
-    <div style={{ padding: '36px', height: 'calc(100vh - 0px)', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 900, fontSize: '1.6rem', color: '#1a1823', marginBottom: 4 }}>Messages & Support</h1>
-        <p style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: '.88rem', color: '#64748b' }}>Tickets de support apprenants</p>
+    <div>
+      {/* Toast */}
+      {toastMessage && (
+        <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 1100, background: '#1B3A6B', color: '#fff', padding: '12px 20px', borderRadius: 9, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '.85rem', boxShadow: '0 8px 24px rgba(27,58,107,.3)' }}>
+          ✓ {toastMessage}
+        </div>
+      )}
+
+      {/* Page Header */}
+      <div className="page-header">
+        <div className="page-header-left">
+          <div className="page-breadcrumb">
+            <span>Opérateur</span>
+            <span className="page-breadcrumb-sep">›</span>
+            <span style={{ color: '#1B3A6B' }}>Messages</span>
+          </div>
+          <h1 className="page-title">Messages & Support</h1>
+          <p className="page-subtitle">Échanges en direct avec les apprenants et les formateurs</p>
+        </div>
+        <div className="page-header-actions">
+          <button className="btn btn-primary btn-sm" onClick={() => setShowNewModal(true)}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nouveau message
+          </button>
+        </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: 20, flex: 1, overflow: 'hidden' }}>
-        {/* Ticket list */}
-        <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2D9CC', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 2px 12px rgba(27,58,107,.04)' }}>
-          <div style={{ padding: '14px 16px', borderBottom: '1px solid #f1ede8' }}>
-            <input placeholder="Rechercher…" style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #E2D9CC', fontFamily: "'Inter', system-ui, sans-serif", fontSize: '.82rem', outline: 'none', boxSizing: 'border-box' }} />
+      {/* Chat Interface Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 20, height: 'calc(100vh - 230px)' }}>
+        {/* Ticket List */}
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div style={{ padding: '12px 14px', borderBottom: '1px solid #EEF0F4' }}>
+            <input className="search-input" style={{ width: '100%', paddingLeft: 12 }} placeholder="Rechercher un échange…" value={search} onChange={e => setSearch(e.target.value)} />
           </div>
+
           <div style={{ flex: 1, overflowY: 'auto' }}>
-            {TICKETS.map(t => {
-              const { color, bg } = STATUS_MAP[t.statut]
-              return (
-                <div key={t.id} onClick={() => setActiveId(t.id)} style={{ padding: '14px 16px', borderBottom: '1px solid #f1ede8', cursor: 'pointer', background: t.id === activeId ? 'rgba(27,58,107,.04)' : 'transparent', borderLeft: `3px solid ${t.id === activeId ? '#1B3A6B' : 'transparent'}`, transition: 'background .15s' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <span style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 700, fontSize: '.84rem', color: '#1a1823' }}>{t.nom}</span>
-                    <span style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: '.68rem', color: '#94a3b8' }}>{t.temps}</span>
-                  </div>
-                  <p style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: '.78rem', color: '#64748b', marginBottom: 8, lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.sujet}</p>
-                  <span style={{ display: 'inline-flex', padding: '2px 9px', borderRadius: 99, background: bg, color, fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 700, fontSize: '.65rem' }}>{t.statut}</span>
+            {filteredTickets.map(t => (
+              <div
+                key={t.id}
+                onClick={() => setActiveId(t.id)}
+                style={{
+                  padding: '14px 16px',
+                  borderBottom: '1px solid #EEF0F4',
+                  cursor: 'pointer',
+                  background: t.id === active.id ? '#EBF0FA' : 'transparent',
+                  borderLeft: `3px solid ${t.id === active.id ? '#1B3A6B' : 'transparent'}`,
+                  transition: 'background .15s',
+                }}
+              >
+                <div className="row-between" style={{ marginBottom: 4 }}>
+                  <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: '.84rem', color: '#1a2535' }}>{t.nom}</span>
+                  <span style={{ fontSize: '.68rem', color: '#9AABBC' }}>{t.temps}</span>
                 </div>
-              )
-            })}
+                <p className="card-meta" style={{ marginBottom: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.sujet}</p>
+                <span className={`badge ${t.statut === 'Ouvert' ? 'badge-red' : t.statut === 'En cours' ? 'badge-gold' : 'badge-green'}`}>
+                  {t.statut}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Thread */}
-        <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2D9CC', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 2px 12px rgba(27,58,107,.04)' }}>
-          <div style={{ padding: '16px 22px', borderBottom: '1px solid #f1ede8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        {/* Conversation Thread */}
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div className="row-between" style={{ padding: '14px 20px', borderBottom: '1px solid #EEF0F4', background: '#F8F9FB' }}>
             <div>
-              <h2 style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 800, fontSize: '.95rem', color: '#1a1823', marginBottom: 2 }}>{active.nom}</h2>
-              <p style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: '.78rem', color: '#64748b' }}>{active.sujet}</p>
+              <h2 className="card-title">{active.nom}</h2>
+              <p className="card-meta" style={{ marginTop: 2 }}>{active.sujet}</p>
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button style={{ padding: '7px 14px', borderRadius: 8, border: '1px solid #059669', background: '#fff', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 700, fontSize: '.75rem', color: '#059669', cursor: 'pointer' }}>Marquer résolu</button>
-              <button style={{ padding: '7px 14px', borderRadius: 8, border: '1px solid #E2D9CC', background: '#fff', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 600, fontSize: '.75rem', color: '#64748b', cursor: 'pointer' }}>Transférer</button>
+            <div className="row" style={{ gap: 8 }}>
+              {active.statut !== 'Résolu' && (
+                <button className="btn btn-outline btn-sm" onClick={handleResolve}>
+                  Marquer résolu
+                </button>
+              )}
             </div>
           </div>
 
-          <div style={{ flex: 1, overflowY: 'auto', padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 16, background: '#faf8f5' }}>
+          {/* Messages Feed */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: 14, background: '#FAFBFC' }}>
             {active.messages.map((m, mi) => (
               <div key={mi} style={{ display: 'flex', justifyContent: m.own ? 'flex-end' : 'flex-start', gap: 10 }}>
-                {!m.own && <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#E2D9CC', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 700, fontSize: '.78rem', color: '#1B3A6B', flexShrink: 0 }}>{m.from.charAt(0)}</div>}
-                <div style={{ maxWidth: '72%' }}>
-                  <div style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: '.68rem', color: '#94a3b8', marginBottom: 4, textAlign: m.own ? 'right' : 'left' }}>{m.from} · {m.time}</div>
-                  <div style={{ padding: '12px 16px', borderRadius: m.own ? '14px 14px 3px 14px' : '14px 14px 14px 3px', background: m.own ? '#1B3A6B' : '#fff', color: m.own ? '#fff' : '#374151', fontFamily: "'Inter', system-ui, sans-serif", fontSize: '.84rem', lineHeight: 1.55, border: m.own ? 'none' : '1px solid #E2D9CC', boxShadow: '0 2px 8px rgba(0,0,0,.06)' }}>{m.text}</div>
+                {!m.own && (
+                  <div className="avatar avatar-sm avatar-navy" style={{ width: 32, height: 32, fontSize: '.75rem' }}>
+                    {m.from.charAt(0)}
+                  </div>
+                )}
+                <div style={{ maxWidth: '70%' }}>
+                  <div style={{ fontSize: '.68rem', color: '#9AABBC', marginBottom: 4, textAlign: m.own ? 'right' : 'left' }}>
+                    {m.from} · {m.time}
+                  </div>
+                  <div
+                    style={{
+                      padding: '10px 14px',
+                      borderRadius: m.own ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
+                      background: m.own ? '#1B3A6B' : '#fff',
+                      color: m.own ? '#fff' : '#374151',
+                      border: m.own ? 'none' : '1px solid #E8ECF2',
+                      boxShadow: '0 2px 6px rgba(0,0,0,.04)',
+                      fontSize: '.84rem',
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {m.text}
+                  </div>
                 </div>
               </div>
             ))}
           </div>
 
-          <div style={{ padding: '14px 22px', borderTop: '1px solid #f1ede8', display: 'flex', gap: 10 }}>
-            <input value={reply} onChange={e => setReply(e.target.value)} placeholder="Répondre à ce ticket…" style={{ flex: 1, padding: '10px 14px', borderRadius: 10, border: '1.5px solid #E2D9CC', fontFamily: "'Inter', system-ui, sans-serif", fontSize: '.88rem', outline: 'none' }}
-              onFocus={e => (e.currentTarget.style.borderColor = '#1B3A6B')}
-              onBlur={e => (e.currentTarget.style.borderColor = '#E2D9CC')} />
-            <button disabled={!reply.trim()} style={{ padding: '10px 20px', borderRadius: 10, border: 'none', background: reply.trim() ? '#1B3A6B' : '#E2D9CC', color: '#fff', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 700, fontSize: '.85rem', cursor: reply.trim() ? 'pointer' : 'not-allowed' }}>Envoyer</button>
+          {/* Reply Form */}
+          <div className="row" style={{ padding: '14px 20px', borderTop: '1px solid #EEF0F4', gap: 10 }}>
+            <input
+              className="search-input"
+              style={{ flex: 1, paddingLeft: 14 }}
+              placeholder="Écrivez votre réponse…"
+              value={replyText}
+              onChange={e => setReplyText(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSendReply()}
+            />
+            <button className="btn btn-primary btn-sm" disabled={!replyText.trim()} onClick={handleSendReply}>
+              Envoyer
+            </button>
           </div>
         </div>
       </div>
+
+      {/* New Message Modal */}
+      {showNewModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(9,24,46,.45)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div className="card card-p" style={{ width: '100%', maxWidth: 460 }}>
+            <div className="row-between" style={{ marginBottom: 16 }}>
+              <h2 className="card-title">Nouveau message</h2>
+              <button className="btn btn-ghost btn-sm" onClick={() => setShowNewModal(false)}>✕</button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div>
+                <label className="card-meta" style={{ display: 'block', marginBottom: 4 }}>Destinataire</label>
+                <input className="search-input" style={{ width: '100%', paddingLeft: 12 }} value={newTicket.nom} onChange={e => setNewTicket(prev => ({ ...prev, nom: e.target.value }))} />
+              </div>
+              <div>
+                <label className="card-meta" style={{ display: 'block', marginBottom: 4 }}>Sujet</label>
+                <input className="search-input" style={{ width: '100%', paddingLeft: 12 }} value={newTicket.sujet} onChange={e => setNewTicket(prev => ({ ...prev, sujet: e.target.value }))} />
+              </div>
+              <div>
+                <label className="card-meta" style={{ display: 'block', marginBottom: 4 }}>Message</label>
+                <textarea className="search-input" rows={4} style={{ width: '100%', paddingLeft: 12, resize: 'vertical' }} value={newTicket.text} onChange={e => setNewTicket(prev => ({ ...prev, text: e.target.value }))} />
+              </div>
+            </div>
+
+            <div className="row" style={{ marginTop: 20, justifyContent: 'flex-end', gap: 10 }}>
+              <button className="btn btn-ghost btn-sm" onClick={() => setShowNewModal(false)}>Annuler</button>
+              <button className="btn btn-primary btn-sm" onClick={handleCreateTicket}>Envoyer le message</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

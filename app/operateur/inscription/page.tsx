@@ -1,16 +1,6 @@
 'use client'
+
 import { useState } from 'react'
-
-const NAVY = '#1B3A6B'
-const NAVY_DARK = '#0F2347'
-const GOLD = '#C9922A'
-
-const CARD_STYLE = {
-  background: '#fff',
-  borderRadius: 12,
-  boxShadow: '0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(27,58,107,.06)',
-  border: '1px solid rgba(27,58,107,.07)',
-}
 
 const STEPS = [
   { label: 'Informations élève', sub: 'Coordonnées personnelles' },
@@ -30,71 +20,94 @@ const PLANS = [
   { id: 'annuel', label: 'Annuel', desc: 'Économisez 17%', factor: 9.96, badge: 'Meilleure offre' },
 ]
 
-const FIELDS: [string, string, string][] = [
-  ['Prénom', 'text', 'ex: Ahmed'],
-  ['Nom', 'text', 'ex: Cherkaoui'],
-  ['Date de naissance', 'date', ''],
-  ['Téléphone', 'tel', '+212 6XX XXX XXX'],
-  ['Email', 'email', 'exemple@mail.com'],
-  ['Ville', 'text', 'ex: Casablanca'],
-]
-
-function Input({ label, type, placeholder }: { label: string; type: string; placeholder: string }) {
-  return (
-    <div>
-      <label style={{ display: 'block', fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 600, fontSize: 12.5, color: '#374151', marginBottom: 6 }}>{label}</label>
-      <input
-        type={type}
-        placeholder={placeholder}
-        style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1.5px solid rgba(27,58,107,.15)', fontFamily: "'Inter', sans-serif", fontSize: 13.5, color: '#1a1823', outline: 'none', boxSizing: 'border-box', background: '#fff', transition: 'border-color .15s' }}
-        onFocus={e => (e.currentTarget.style.borderColor = NAVY)}
-        onBlur={e => (e.currentTarget.style.borderColor = 'rgba(27,58,107,.15)')}
-      />
-    </div>
-  )
-}
-
 export default function InscriptionPage() {
   const [step, setStep] = useState(0)
   const [selectedGroup, setSelectedGroup] = useState(0)
   const [selectedPlan, setSelectedPlan] = useState('mensuel')
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [successToast, setSuccessToast] = useState(false)
+
+  // Form State
+  const [formData, setFormData] = useState({
+    prenom: 'Ahmed',
+    nom: 'Cherkaoui',
+    dob: '2005-04-12',
+    telephone: '+212 661 234 567',
+    email: 'ahmed.cherkaoui@mail.com',
+    ville: 'Casablanca',
+    notes: 'Inscription recommandée par le centre Atlas.'
+  })
 
   const group = MOCK_GROUPS[selectedGroup]
   const plan = PLANS.find(p => p.id === selectedPlan)!
   const totalPrice = (group.price * plan.factor).toFixed(0)
 
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  const handleSubmitInscription = () => {
+    setShowSuccessModal(true)
+    setSuccessToast(true)
+    setTimeout(() => setSuccessToast(false), 4000)
+  }
+
+  const resetForm = () => {
+    setStep(0)
+    setShowSuccessModal(false)
+    setFormData({ prenom: '', nom: '', dob: '', telephone: '', email: '', ville: '', notes: '' })
+  }
+
   return (
     <div>
-      {/* Header */}
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 900, fontSize: 26, color: NAVY_DARK, marginBottom: 4 }}>Nouvelle inscription</h1>
-        <p style={{ fontSize: 13.5, color: '#64748b' }}>Enregistrez un nouvel élève en 3 étapes simples</p>
+      {/* Toast Notification */}
+      {successToast && (
+        <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 1100, background: '#059669', color: '#fff', padding: '12px 20px', borderRadius: 9, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '.85rem', boxShadow: '0 8px 24px rgba(5,150,105,.3)', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Élève inscrit avec succès et contrat généré !
+        </div>
+      )}
+
+      {/* Page Header */}
+      <div className="page-header">
+        <div className="page-header-left">
+          <div className="page-breadcrumb">
+            <span>Opérateur</span>
+            <span className="page-breadcrumb-sep">›</span>
+            <span style={{ color: '#1B3A6B' }}>Inscription</span>
+          </div>
+          <h1 className="page-title">Nouvelle inscription</h1>
+          <p className="page-subtitle">Enregistrez un nouvel élève en 3 étapes simples</p>
+        </div>
+        <div className="page-header-actions">
+          <span className="badge badge-green">Étape {step + 1} / {STEPS.length}</span>
+        </div>
       </div>
 
-      {/* Step indicator */}
-      <div style={{ ...CARD_STYLE, padding: '22px 32px', marginBottom: 24, display: 'flex', alignItems: 'center' }}>
+      {/* Step Indicator */}
+      <div className="card card-p" style={{ marginBottom: 24, display: 'flex', alignItems: 'center' }}>
         {STEPS.map((s, i) => (
           <div key={s.label} style={{ display: 'flex', alignItems: 'center', flex: i < STEPS.length - 1 ? 1 : 'none' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, cursor: i <= step ? 'pointer' : 'default' }} onClick={() => i <= step && setStep(i)}>
               <div style={{
                 width: 38, height: 38, borderRadius: '50%',
-                background: i < step ? GOLD : i === step ? NAVY : 'rgba(27,58,107,.08)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: i < step ? '#C9922A' : i === step ? '#1B3A6B' : 'rgba(27,58,107,.08)',
+                display: 'flex', alignItems: 'center', justifyCenter: 'center',
                 transition: 'background .25s',
               }}>
                 {i < step ? (
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
                 ) : (
-                  <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, fontSize: 13, color: i === step ? '#fff' : 'rgba(27,58,107,.4)' }}>{i + 1}</span>
+                  <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 13, color: i === step ? '#fff' : 'rgba(27,58,107,.4)' }}>{i + 1}</span>
                 )}
               </div>
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: 12.5, color: i === step ? NAVY : i < step ? GOLD : '#94a3b8', whiteSpace: 'nowrap' }}>{s.label}</div>
-                <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>{s.sub}</div>
+                <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: '.78rem', color: i === step ? '#1B3A6B' : i < step ? '#C9922A' : '#94a3b8', whiteSpace: 'nowrap' }}>{s.label}</div>
+                <div style={{ fontSize: '.7rem', color: '#94a3b8', marginTop: 1 }}>{s.sub}</div>
               </div>
             </div>
             {i < STEPS.length - 1 && (
-              <div style={{ flex: 1, height: 2, background: i < step ? GOLD : 'rgba(27,58,107,.1)', margin: '0 16px', marginBottom: 28, borderRadius: 2, transition: 'background .3s' }} />
+              <div style={{ flex: 1, height: 2, background: i < step ? '#C9922A' : 'rgba(27,58,107,.1)', margin: '0 16px', marginBottom: 28, borderRadius: 2, transition: 'background .3s' }} />
             )}
           </div>
         ))}
@@ -102,19 +115,40 @@ export default function InscriptionPage() {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 20, alignItems: 'start' }}>
         {/* Form area */}
-        <div style={{ ...CARD_STYLE, padding: '30px' }}>
+        <div className="card card-p" style={{ padding: '30px' }}>
           {/* Step 1 */}
           {step === 0 && (
             <div>
-              <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, fontSize: 17, color: NAVY_DARK, marginBottom: 24 }}>Informations élève</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
-                {FIELDS.map(([label, type, placeholder]) => (
-                  <Input key={label} label={label} type={type} placeholder={placeholder} />
-                ))}
+              <h2 className="card-title" style={{ fontSize: '1.05rem', marginBottom: 20 }}>Informations élève</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div>
+                  <label style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '.76rem', color: '#374151', marginBottom: 6 }}>Prénom</label>
+                  <input className="search-input" style={{ paddingLeft: 14 }} value={formData.prenom} onChange={e => handleInputChange('prenom', e.target.value)} placeholder="ex: Ahmed" />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '.76rem', color: '#374151', marginBottom: 6 }}>Nom</label>
+                  <input className="search-input" style={{ paddingLeft: 14 }} value={formData.nom} onChange={e => handleInputChange('nom', e.target.value)} placeholder="ex: Cherkaoui" />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '.76rem', color: '#374151', marginBottom: 6 }}>Date de naissance</label>
+                  <input className="search-input" type="date" style={{ paddingLeft: 14 }} value={formData.dob} onChange={e => handleInputChange('dob', e.target.value)} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '.76rem', color: '#374151', marginBottom: 6 }}>Téléphone (WhatsApp)</label>
+                  <input className="search-input" style={{ paddingLeft: 14 }} value={formData.telephone} onChange={e => handleInputChange('telephone', e.target.value)} placeholder="+212 6XX XXX XXX" />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '.76rem', color: '#374151', marginBottom: 6 }}>Adresse email</label>
+                  <input className="search-input" type="email" style={{ paddingLeft: 14 }} value={formData.email} onChange={e => handleInputChange('email', e.target.value)} placeholder="exemple@mail.com" />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '.76rem', color: '#374151', marginBottom: 6 }}>Ville</label>
+                  <input className="search-input" style={{ paddingLeft: 14 }} value={formData.ville} onChange={e => handleInputChange('ville', e.target.value)} placeholder="ex: Casablanca" />
+                </div>
               </div>
-              <div style={{ marginTop: 18 }}>
-                <label style={{ display: 'block', fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 600, fontSize: 12.5, color: '#374151', marginBottom: 6 }}>Notes complémentaires</label>
-                <textarea rows={3} placeholder="Informations supplémentaires, besoins spécifiques…" style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1.5px solid rgba(27,58,107,.15)', fontFamily: "'Inter', sans-serif", fontSize: 13.5, outline: 'none', resize: 'vertical', boxSizing: 'border-box', color: '#1a1823' }} onFocus={e => (e.currentTarget.style.borderColor = NAVY)} onBlur={e => (e.currentTarget.style.borderColor = 'rgba(27,58,107,.15)')} />
+              <div style={{ marginTop: 16 }}>
+                <label style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '.76rem', color: '#374151', marginBottom: 6 }}>Notes complémentaires</label>
+                <textarea className="search-input" rows={3} style={{ paddingLeft: 14, resize: 'vertical' }} value={formData.notes} onChange={e => handleInputChange('notes', e.target.value)} placeholder="Informations supplémentaires, besoins spécifiques…" />
               </div>
             </div>
           )}
@@ -122,42 +156,47 @@ export default function InscriptionPage() {
           {/* Step 2 */}
           {step === 1 && (
             <div>
-              <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, fontSize: 17, color: NAVY_DARK, marginBottom: 8 }}>Choisir un groupe</h2>
-              <p style={{ fontSize: 13, color: '#64748b', marginBottom: 22 }}>Sélectionnez le groupe qui correspond à l'élève</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 28 }}>
+              <h2 className="card-title" style={{ fontSize: '1.05rem', marginBottom: 6 }}>Choisir un groupe</h2>
+              <p className="card-meta" style={{ marginBottom: 20 }}>Sélectionnez le groupe d'affectation de l'élève</p>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
                 {MOCK_GROUPS.map((g, gi) => {
                   const selected = selectedGroup === gi
                   return (
-                    <div key={g.id} onClick={() => setSelectedGroup(gi)} style={{ padding: '18px 20px', borderRadius: 11, border: `2px solid ${selected ? NAVY : 'rgba(27,58,107,.12)'}`, background: selected ? 'rgba(27,58,107,.04)' : '#fff', cursor: 'pointer', transition: 'all .15s' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                        <div>
-                          <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: 14.5, color: '#1a1823', marginBottom: 3 }}>{g.name}</div>
-                          <div style={{ fontSize: 12.5, color: '#64748b' }}>{g.schedule} · {g.formateur}</div>
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 900, fontSize: 16, color: NAVY }}>{g.price} DH<span style={{ fontWeight: 400, fontSize: 12, color: '#94a3b8' }}>/mois</span></div>
-                          <div style={{ fontSize: 11.5, color: g.spots <= 2 ? '#DC2626' : '#059669', fontWeight: 600, marginTop: 2 }}>{g.spots} place{g.spots > 1 ? 's' : ''} dispo.</div>
-                        </div>
+                    <div
+                      key={g.id}
+                      onClick={() => setSelectedGroup(gi)}
+                      style={{
+                        padding: '16px 18px',
+                        borderRadius: 10,
+                        border: `2px solid ${selected ? '#1B3A6B' : '#E8ECF2'}`,
+                        background: selected ? '#EBF0FA' : '#fff',
+                        cursor: 'pointer',
+                        transition: 'all .15s',
+                      }}
+                    >
+                      <div className="row-between" style={{ marginBottom: 6 }}>
+                        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '.9rem', color: '#1B3A6B' }}>{g.name}</span>
+                        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '.92rem', color: '#C9922A' }}>{g.price} DH / mois</span>
                       </div>
-                      <div style={{ height: 6, borderRadius: 3, background: 'rgba(27,58,107,.08)', overflow: 'hidden' }}>
-                        <div style={{ height: '100%', width: `${((g.total - g.spots) / g.total) * 100}%`, background: g.spots <= 2 ? '#DC2626' : NAVY, borderRadius: 3 }} />
+                      <div className="row-between">
+                        <span className="card-meta">{g.schedule} · Formateur: {g.formateur}</span>
+                        <span className={`badge ${g.spots <= 2 ? 'badge-red' : 'badge-green'}`}>{g.spots} places restantes</span>
                       </div>
-                      <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 5 }}>{g.total - g.spots}/{g.total} élèves inscrits</div>
                     </div>
                   )
                 })}
               </div>
 
-              <div style={{ borderTop: '1px solid rgba(27,58,107,.08)', paddingTop: 24 }}>
-                <h3 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: 14.5, color: NAVY_DARK, marginBottom: 14 }}>Plan de paiement</h3>
+              <div style={{ borderTop: '1px solid #EEF0F4', paddingTop: 20 }}>
+                <h3 className="card-title" style={{ fontSize: '.88rem', marginBottom: 12 }}>Plan de paiement</h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
                   {PLANS.map((p) => {
                     const selected = selectedPlan === p.id
                     return (
-                      <div key={p.id} onClick={() => setSelectedPlan(p.id)} style={{ padding: '14px 16px', borderRadius: 10, border: `2px solid ${selected ? GOLD : 'rgba(27,58,107,.12)'}`, background: selected ? 'rgba(201,146,42,.05)' : '#fff', cursor: 'pointer', position: 'relative', textAlign: 'center', transition: 'all .15s' }}>
-                        {p.badge && <span style={{ position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)', background: GOLD, color: '#fff', fontSize: 9.5, fontWeight: 800, borderRadius: 99, padding: '2px 8px', fontFamily: "'Plus Jakarta Sans', sans-serif", whiteSpace: 'nowrap' }}>{p.badge}</span>}
-                        <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, fontSize: 14, color: selected ? GOLD : '#1a1823' }}>{p.label}</div>
-                        <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 3 }}>{p.desc}</div>
+                      <div key={p.id} onClick={() => setSelectedPlan(p.id)} style={{ padding: '12px 14px', borderRadius: 9, border: `2px solid ${selected ? '#C9922A' : '#E8ECF2'}`, background: selected ? 'rgba(201,146,42,.08)' : '#fff', cursor: 'pointer', textAlign: 'center', transition: 'all .15s' }}>
+                        <div style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: '.84rem', color: selected ? '#C9922A' : '#1a2535' }}>{p.label}</div>
+                        <div style={{ fontSize: '.7rem', color: '#9AABBC', marginTop: 2 }}>{p.desc}</div>
                       </div>
                     )
                   })}
@@ -169,83 +208,96 @@ export default function InscriptionPage() {
           {/* Step 3 */}
           {step === 2 && (
             <div>
-              <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, fontSize: 17, color: NAVY_DARK, marginBottom: 8 }}>Confirmation de l'inscription</h2>
-              <p style={{ fontSize: 13, color: '#64748b', marginBottom: 24 }}>Vérifiez les informations avant de valider</p>
+              <h2 className="card-title" style={{ fontSize: '1.05rem', marginBottom: 6 }}>Confirmation de l'inscription</h2>
+              <p className="card-meta" style={{ marginBottom: 20 }}>Vérifiez les informations avant de valider et générer le contrat</p>
 
-              {/* Summary */}
-              <div style={{ background: '#F5F6F8', borderRadius: 12, padding: '20px 24px', marginBottom: 24 }}>
-                <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: 12, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 16 }}>Récapitulatif</div>
+              <div style={{ background: '#F8F9FB', borderRadius: 10, padding: '18px 20px', marginBottom: 20, border: '1px solid #E8ECF2' }}>
+                <div className="card-title" style={{ fontSize: '.72rem', color: '#7A8CA0', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 12 }}>Récapitulatif du dossier</div>
                 {[
-                  ['Élève', 'Ahmed Cherkaoui'],
-                  ['Email', 'ahmed.cherkaoui@mail.com'],
-                  ['Téléphone', '+212 661 234 567'],
+                  ['Nom & Prénom', `${formData.prenom} ${formData.nom}`],
+                  ['Email', formData.email],
+                  ['Téléphone', formData.telephone],
+                  ['Ville', formData.ville],
                   ['Groupe', group.name],
                   ['Formateur', group.formateur],
                   ['Planning', group.schedule],
                   ['Plan de paiement', plan.label],
-                  ['Montant', `${totalPrice} DH (${plan.label.toLowerCase()})`],
+                  ['Montant total', `${totalPrice} DH`],
                 ].map(([k, v]) => (
-                  <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid rgba(27,58,107,.06)' }}>
-                    <span style={{ fontSize: 13, color: '#64748b' }}>{k}</span>
-                    <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 600, fontSize: 13, color: '#1a1823' }}>{v}</span>
+                  <div key={k} className="row-between" style={{ padding: '7px 0', borderBottom: '1px solid #EEF0F4' }}>
+                    <span className="card-meta">{k}</span>
+                    <span style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: '.83rem', color: '#1a2535' }}>{v}</span>
                   </div>
                 ))}
               </div>
 
-              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', background: 'rgba(5,150,105,.06)', borderRadius: 10, padding: '14px 16px', marginBottom: 24, border: '1px solid rgba(5,150,105,.15)' }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0, marginTop: 1 }}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                <div style={{ fontSize: 12.5, color: '#059669', lineHeight: 1.5 }}>Un contrat PDF sera généré automatiquement et envoyé par WhatsApp à l'élève et au parent.</div>
-              </div>
-
-              <button style={{ width: '100%', padding: '14px', borderRadius: 10, border: 'none', background: NAVY, color: '#fff', fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, fontSize: 14.5, cursor: 'pointer', boxShadow: '0 4px 14px rgba(27,58,107,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
-                Inscrire et générer le contrat
+              <button className="btn btn-primary" onClick={handleSubmitInscription} style={{ width: '100%', justifyContent: 'center', padding: '12px' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                Inscrire et générer le contrat PDF
               </button>
             </div>
           )}
         </div>
 
-        {/* Sidebar summary + navigation */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ ...CARD_STYLE, padding: '22px' }}>
-            <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: 13, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 16 }}>Aperçu</div>
+        {/* Sidebar Summary & Nav Buttons */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div className="card card-p">
+            <div className="card-title" style={{ fontSize: '.72rem', color: '#7A8CA0', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 12 }}>Aperçu rapide</div>
             {[
-              ['Élève', 'Ahmed Cherkaoui'],
+              ['Élève', `${formData.prenom} ${formData.nom}`],
               ['Groupe', group.name],
-              ['Tarif', `${group.price} DH/mois`],
-              ['Plan', plan.label],
-              ['Total', `${totalPrice} DH`],
+              ['Tarif mensuel', `${group.price} DH`],
+              ['Plan choisi', plan.label],
+              ['Total estimé', `${totalPrice} DH`],
             ].map(([k, v]) => (
-              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '9px 0', borderBottom: '1px solid rgba(27,58,107,.06)' }}>
-                <span style={{ fontSize: 13, color: '#94a3b8' }}>{k}</span>
-                <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 600, fontSize: 13, color: '#1a1823' }}>{v}</span>
+              <div key={k} className="row-between" style={{ padding: '8px 0', borderBottom: '1px solid #EEF0F4' }}>
+                <span className="card-meta">{k}</span>
+                <span style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: '.8rem', color: '#1a2535' }}>{v}</span>
               </div>
             ))}
           </div>
 
           <div style={{ display: 'flex', gap: 10 }}>
             {step > 0 && (
-              <button onClick={() => setStep(s => s - 1)} style={{ flex: 1, padding: '12px', borderRadius: 9, border: '1.5px solid rgba(27,58,107,.15)', background: '#fff', fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: 13.5, color: '#64748b', cursor: 'pointer' }}>
+              <button className="btn btn-ghost" onClick={() => setStep(s => s - 1)} style={{ flex: 1, justifyContent: 'center' }}>
                 ← Retour
               </button>
             )}
             {step < 2 && (
-              <button onClick={() => setStep(s => s + 1)} style={{ flex: 1, padding: '12px', borderRadius: 9, border: 'none', background: NAVY, color: '#fff', fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: 13.5, cursor: 'pointer', boxShadow: '0 4px 12px rgba(27,58,107,.25)' }}>
+              <button className="btn btn-primary" onClick={() => setStep(s => s + 1)} style={{ flex: 1, justifyContent: 'center' }}>
                 Suivant →
               </button>
             )}
           </div>
-
-          {/* Help card */}
-          <div style={{ ...CARD_STYLE, padding: '18px 20px', background: 'rgba(27,58,107,.03)' }}>
-            <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: 12.5, color: NAVY, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={NAVY} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-              Besoin d'aide ?
-            </div>
-            <p style={{ fontSize: 12, color: '#64748b', lineHeight: 1.55 }}>Contactez le responsable pédagogique si vous avez des questions sur les groupes ou les tarifs.</p>
-          </div>
         </div>
       </div>
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(9,24,46,.45)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div className="card card-p" style={{ width: '100%', maxWidth: 460, textAlign: 'center', animation: 'authCardIn .3s ease' }}>
+            <div className="avatar avatar-md avatar-green" style={{ width: 48, height: 48, margin: '0 auto 14px', fontSize: '1.2rem' }}>
+              ✓
+            </div>
+            <h2 className="page-title" style={{ fontSize: '1.25rem', marginBottom: 6 }}>Inscription validée !</h2>
+            <p className="card-meta" style={{ marginBottom: 20 }}>L'élève <strong>{formData.prenom} {formData.nom}</strong> a été inscrit dans le groupe <strong>{group.name}</strong>.</p>
+            
+            <div style={{ background: '#F8F9FB', borderRadius: 9, padding: '12px 14px', marginBottom: 20, textStyle: 'left', fontSize: '.78rem', color: '#374151', border: '1px solid #E8ECF2' }}>
+              <div>📄 <strong>Contrat #CTR-2026-{Math.floor(1000 + Math.random() * 9000)}</strong></div>
+              <div style={{ color: '#7A8CA0', marginTop: 2 }}>Transmis à {formData.telephone} par WhatsApp</div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button className="btn btn-ghost btn-sm" onClick={() => window.print()} style={{ flex: 1, justifyContent: 'center' }}>
+                Imprimer contrat
+              </button>
+              <button className="btn btn-primary btn-sm" onClick={resetForm} style={{ flex: 1, justifyContent: 'center' }}>
+                Nouvelle inscription
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

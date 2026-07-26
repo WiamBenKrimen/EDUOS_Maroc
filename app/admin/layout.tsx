@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import LogoutButton from '../logout-button'
@@ -29,15 +30,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="dir-shell">
       <aside className="dir-sidebar">
         <div className="dir-brand">
-          <div className="dir-brand-mark" style={{ background: 'rgba(220,38,38,.15)', borderColor: 'rgba(220,38,38,.3)', color: '#f87171' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-            </svg>
-          </div>
-          <div>
-            <div className="dir-brand-name">EDUOS</div>
-            <div className="dir-brand-role" style={{ color: '#f87171' }}>Admin</div>
-          </div>
+          <Link href="/admin/utilisateurs" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+            <Image src="/images/logo.png" alt="EDUOS MAROC" width={115} height={38} style={{ height: 38, width: 'auto', objectFit: 'contain' }} priority />
+          </Link>
+          <span className="dir-brand-role" style={{ marginLeft: 'auto', background: 'rgba(220,38,38,.08)', color: '#DC2626', padding: '3px 8px', borderRadius: 6 }}>Admin</span>
         </div>
 
         <nav className="dir-nav">

@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ReactNode, useEffect, useState } from 'react'
@@ -71,16 +72,10 @@ export default function ParticipantLayout({ children }: { children: ReactNode })
       {/* ── Sidebar ── */}
       <aside className={`dir-sidebar${menuOpen ? ' is-open' : ''}`}>
         <div className="dir-brand">
-          <div className="dir-brand-mark" style={{ background: 'rgba(201,146,42,.18)', borderColor: 'rgba(201,146,42,.3)' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-            </svg>
-          </div>
-          <div>
-            <div className="dir-brand-name">EDUOS</div>
-            <div className="dir-brand-role" style={{ color: '#C9922A' }}>Mon espace</div>
-          </div>
+          <Link href="/participant/mon-espace" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+            <Image src="/images/logo.png" alt="EDUOS MAROC" width={115} height={38} style={{ height: 38, width: 'auto', objectFit: 'contain' }} priority />
+          </Link>
+          <span className="dir-brand-role" style={{ marginLeft: 'auto', background: 'rgba(201,146,42,.12)', color: '#C9922A', padding: '3px 8px', borderRadius: 6 }}>Mon Espace</span>
         </div>
 
         <nav className="dir-nav">

@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { FormEvent, useState } from 'react'
 import { homeForRole, register, type Role } from '../../../lib/auth'
@@ -44,14 +45,8 @@ export default function RegisterPage() {
     <div className="auth-page">
       <div className="auth-card" style={{ maxWidth: 460 }}>
         {/* Logo */}
-        <Link href="/" className="auth-logo">
-          <div className="auth-logo-mark">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/>
-              <path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/>
-            </svg>
-          </div>
-          <span className="auth-logo-name">EDUOS</span>
+        <Link href="/" className="auth-logo" style={{ justifyContent: 'center', marginBottom: 24 }}>
+          <Image src="/images/logo.png" alt="EDUOS MAROC" width={160} height={52} style={{ height: 48, width: 'auto', objectFit: 'contain' }} priority />
         </Link>
 
         <h1 className="auth-heading">Créer un compte</h1>

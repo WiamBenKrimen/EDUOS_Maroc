@@ -1,103 +1,219 @@
 'use client'
+
 import { useState } from 'react'
 
-const DOCS = [
-  { nom: 'Contrat_Ahmed_Cherkaoui.pdf', type: 'Contrat', apprenant: 'Ahmed Cherkaoui', date: '01 sept. 2024', taille: '340 Ko' },
-  { nom: 'Attestation_Sara_Benali.pdf', type: 'Attestation', apprenant: 'Sara Benali', date: '30 juin 2025', taille: '280 Ko' },
-  { nom: 'Fiche_Inscription_Fatima.pdf', type: "Fiche d'inscription", apprenant: 'Fatima Zahra El Idrissi', date: '15 sept. 2024', taille: '190 Ko' },
-  { nom: 'Reglement_Interieur_2025.pdf', type: 'Règlement', apprenant: '—', date: '01 jan. 2025', taille: '450 Ko' },
-  { nom: 'Contrat_Karim_Ouali.pdf', type: 'Contrat', apprenant: 'Karim Ouali', date: '01 oct. 2024', taille: '340 Ko' },
-  { nom: 'Photo_ID_Omar_Tahiri.jpg', type: 'Pièce d\'identité', apprenant: 'Omar Tahiri', date: '10 oct. 2024', taille: '1.2 Mo' },
+const INITIAL_DOCS = [
+  { id: 1, nom: 'Contrat_Ahmed_Cherkaoui.pdf', type: 'Contrat', apprenant: 'Ahmed Cherkaoui', date: '01 sept. 2024', taille: '340 Ko' },
+  { id: 2, nom: 'Attestation_Sara_Benali.pdf', type: 'Attestation', apprenant: 'Sara Benali', date: '30 juin 2025', taille: '280 Ko' },
+  { id: 3, nom: 'Fiche_Inscription_Fatima.pdf', type: "Fiche d'inscription", apprenant: 'Fatima Zahra El Idrissi', date: '15 sept. 2024', taille: '190 Ko' },
+  { id: 4, nom: 'Reglement_Interieur_2025.pdf', type: 'Règlement', apprenant: '—', date: '01 jan. 2025', taille: '450 Ko' },
+  { id: 5, nom: 'Contrat_Karim_Ouali.pdf', type: 'Contrat', apprenant: 'Karim Ouali', date: '01 oct. 2024', taille: '340 Ko' },
+  { id: 6, nom: 'Photo_ID_Omar_Tahiri.jpg', type: "Pièce d'identité", apprenant: 'Omar Tahiri', date: '10 oct. 2024', taille: '1.2 Mo' },
 ]
 
-const TYPE_COLORS: Record<string, { color: string; bg: string }> = {
-  'Contrat': { color: '#1B3A6B', bg: 'rgba(27,58,107,.07)' },
-  'Attestation': { color: '#059669', bg: 'rgba(5,150,105,.07)' },
-  "Fiche d'inscription": { color: '#C9922A', bg: 'rgba(201,146,42,.09)' },
-  'Règlement': { color: '#64748b', bg: '#f1f5f9' },
-  "Pièce d'identité": { color: '#7C3AED', bg: 'rgba(124,58,237,.07)' },
-}
-
 export default function DocumentsPage() {
-  const [dragging, setDragging] = useState(false)
+  const [docs, setDocs] = useState(INITIAL_DOCS)
+  const [search, setSearch] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('Tous les types')
+  const [showImportModal, setShowImportModal] = useState(false)
+  const [previewDoc, setPreviewDoc] = useState<typeof INITIAL_DOCS[0] | null>(null)
+  const [toastMessage, setToastMessage] = useState('')
+
+  // New Doc Form
+  const [newDoc, setNewDoc] = useState({
+    nom: 'Nouveau_Document.pdf',
+    type: 'Contrat',
+    apprenant: 'Ahmed Cherkaoui',
+    taille: '420 Ko'
+  })
+
+  const triggerToast = (msg: string) => {
+    setToastMessage(msg)
+    setTimeout(() => setToastMessage(''), 3500)
+  }
+
+  const handleImportDoc = () => {
+    const created = {
+      id: Date.now(),
+      nom: newDoc.nom,
+      type: newDoc.type,
+      apprenant: newDoc.apprenant,
+      date: 'Aujourd\'hui',
+      taille: newDoc.taille
+    }
+    setDocs(prev => [created, ...prev])
+    setShowImportModal(false)
+    triggerToast(`Document "${created.nom}" importé avec succès !`)
+  }
+
+  const handleDeleteDoc = (id: number) => {
+    setDocs(prev => prev.filter(d => d.id !== id))
+    triggerToast('Document supprimé.')
+  }
+
+  const filtered = docs.filter(d => {
+    const matchSearch = d.nom.toLowerCase().includes(search.toLowerCase()) || d.apprenant.toLowerCase().includes(search.toLowerCase())
+    const matchCategory = categoryFilter === 'Tous les types' || d.type === categoryFilter
+    return matchSearch && matchCategory
+  })
 
   return (
-    <div style={{ padding: '36px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 }}>
-        <div>
-          <h1 style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 900, fontSize: '1.6rem', color: '#1a1823', marginBottom: 4 }}>Documents</h1>
-          <p style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: '.88rem', color: '#64748b' }}>Gérez les documents administratifs des apprenants</p>
+    <div>
+      {/* Toast */}
+      {toastMessage && (
+        <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 1100, background: '#1B3A6B', color: '#fff', padding: '12px 20px', borderRadius: 9, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '.85rem', boxShadow: '0 8px 24px rgba(27,58,107,.3)' }}>
+          ✓ {toastMessage}
         </div>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '11px 20px', background: '#1B3A6B', color: '#fff', borderRadius: 10, fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 700, fontSize: '.85rem', cursor: 'pointer' }}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          Importer un document
-          <input type="file" style={{ display: 'none' }} />
-        </label>
-      </div>
+      )}
 
-      {/* Drop zone */}
-      <div onDragOver={e => { e.preventDefault(); setDragging(true) }} onDragLeave={() => setDragging(false)} onDrop={e => { e.preventDefault(); setDragging(false) }}
-        style={{ border: `2px dashed ${dragging ? '#1B3A6B' : '#E2D9CC'}`, borderRadius: 16, padding: '32px', textAlign: 'center', background: dragging ? 'rgba(27,58,107,.04)' : '#faf8f5', marginBottom: 28, transition: 'all .2s' }}>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke={dragging ? '#1B3A6B' : '#94a3b8'} strokeWidth="1.5" strokeLinecap="round">
-            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-          </svg>
+      {/* Page Header */}
+      <div className="page-header">
+        <div className="page-header-left">
+          <div className="page-breadcrumb">
+            <span>Opérateur</span>
+            <span className="page-breadcrumb-sep">›</span>
+            <span style={{ color: '#1B3A6B' }}>Documents</span>
+          </div>
+          <h1 className="page-title">Documents administratifs</h1>
+          <p className="page-subtitle">Gestion des contrats, attestations et pièces justificatives</p>
         </div>
-        <p style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 700, fontSize: '.9rem', color: dragging ? '#1B3A6B' : '#374151', marginBottom: 6 }}>
-          {dragging ? 'Déposez vos fichiers ici' : 'Glissez-déposez vos documents ici'}
-        </p>
-        <p style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: '.8rem', color: '#94a3b8' }}>PDF, images, Word — Taille maximale 20 Mo par fichier</p>
+        <div className="page-header-actions">
+          <button className="btn btn-primary btn-sm" onClick={() => setShowImportModal(true)}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Importer un document
+          </button>
+        </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
-        <input placeholder="Rechercher un document…" style={{ padding: '9px 14px', borderRadius: 9, border: '1.5px solid #E2D9CC', fontFamily: "'Inter', system-ui, sans-serif", fontSize: '.84rem', outline: 'none', width: 280, background: '#fff' }} />
-        <select style={{ padding: '9px 14px', borderRadius: 9, border: '1.5px solid #E2D9CC', fontFamily: "'Inter', system-ui, sans-serif", fontSize: '.84rem', color: '#64748b', background: '#fff', outline: 'none', cursor: 'pointer' }}>
-          <option>Tous les types</option>
-          <option>Contrat</option>
-          <option>Attestation</option>
-          <option>Fiche d'inscription</option>
-        </select>
+      {/* Filter Bar */}
+      <div className="card card-p" style={{ marginBottom: 16 }}>
+        <div className="row" style={{ gap: 12, flexWrap: 'wrap' }}>
+          <div className="search-wrap">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input className="search-input" placeholder="Rechercher un document ou apprenant…" value={search} onChange={e => setSearch(e.target.value)} />
+          </div>
+
+          <select className="search-input" style={{ width: 170, paddingLeft: 10 }} value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>
+            <option>Tous les types</option>
+            <option>Contrat</option>
+            <option>Attestation</option>
+            <option>Fiche d'inscription</option>
+            <option>Règlement</option>
+            <option>Pièce d'identité</option>
+          </select>
+
+          <span className="card-meta" style={{ marginLeft: 'auto' }}>{filtered.length} document{filtered.length > 1 ? 's' : ''}</span>
+        </div>
       </div>
 
-      <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2D9CC', overflow: 'hidden', boxShadow: '0 2px 12px rgba(27,58,107,.04)' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ background: '#faf8f5', borderBottom: '1px solid #E2D9CC' }}>
-              {['Document', 'Type', 'Apprenant', 'Date', 'Taille', 'Actions'].map(h => (
-                <th key={h} style={{ padding: '12px 20px', textAlign: 'left', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 700, fontSize: '.72rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '.05em' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {DOCS.map((d, i) => {
-              const tc = TYPE_COLORS[d.type] ?? { color: '#64748b', bg: '#f1f5f9' }
-              return (
-                <tr key={i} style={{ borderBottom: i < DOCS.length - 1 ? '1px solid #f1ede8' : 'none', transition: 'background .15s' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = '#faf8f5')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                  <td style={{ padding: '13px 20px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="1.5" strokeLinecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                      <span style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 600, fontSize: '.86rem', color: '#1a1823' }}>{d.nom}</span>
+      {/* Documents Table */}
+      <div className="card">
+        <div className="data-table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Document</th>
+                <th>Type</th>
+                <th>Apprenant</th>
+                <th>Date</th>
+                <th>Taille</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(d => (
+                <tr key={d.id}>
+                  <td style={{ fontWeight: 600, color: '#1a2535' }}>
+                    <div className="row">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1B3A6B" strokeWidth="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      {d.nom}
                     </div>
                   </td>
-                  <td style={{ padding: '13px 20px' }}><span style={{ display: 'inline-flex', padding: '3px 10px', borderRadius: 99, background: tc.bg, color: tc.color, fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 700, fontSize: '.7rem' }}>{d.type}</span></td>
-                  <td style={{ padding: '13px 20px', fontFamily: "'Inter', system-ui, sans-serif", fontSize: '.84rem', color: '#64748b' }}>{d.apprenant}</td>
-                  <td style={{ padding: '13px 20px', fontFamily: "'Inter', system-ui, sans-serif", fontSize: '.82rem', color: '#64748b' }}>{d.date}</td>
-                  <td style={{ padding: '13px 20px', fontFamily: "'Inter', system-ui, sans-serif", fontSize: '.82rem', color: '#94a3b8' }}>{d.taille}</td>
-                  <td style={{ padding: '13px 20px' }}>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <button style={{ padding: '5px 10px', borderRadius: 7, border: '1px solid #E2D9CC', background: '#fff', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 600, fontSize: '.72rem', color: '#1B3A6B', cursor: 'pointer' }}>Voir</button>
-                      <button style={{ padding: '5px 10px', borderRadius: 7, border: '1px solid #E2D9CC', background: '#fff', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 600, fontSize: '.72rem', color: '#64748b', cursor: 'pointer' }}>Télécharger</button>
-                      <button style={{ padding: '5px 10px', borderRadius: 7, border: '1px solid #fecaca', background: '#fff', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 600, fontSize: '.72rem', color: '#DC2626', cursor: 'pointer' }}>Supprimer</button>
+                  <td><span className="badge badge-navy">{d.type}</span></td>
+                  <td style={{ color: '#5A6B7D' }}>{d.apprenant}</td>
+                  <td style={{ color: '#9AABBC', fontSize: '.78rem' }}>{d.date}</td>
+                  <td style={{ color: '#9AABBC', fontSize: '.78rem' }}>{d.taille}</td>
+                  <td>
+                    <div className="row" style={{ gap: 6 }}>
+                      <button className="btn btn-ghost btn-sm" style={{ padding: '4px 8px', fontSize: '.72rem' }} onClick={() => setPreviewDoc(d)}>
+                        Voir
+                      </button>
+                      <button className="btn btn-ghost btn-sm" style={{ padding: '4px 8px', fontSize: '.72rem' }} onClick={() => triggerToast(`Téléchargement de "${d.nom}"…`)}>
+                        Télécharger
+                      </button>
+                      <button className="btn btn-sm" style={{ padding: '4px 8px', fontSize: '.72rem', background: 'rgba(220,38,38,.08)', color: '#DC2626', border: 'none' }} onClick={() => handleDeleteDoc(d.id)}>
+                        Supprimer
+                      </button>
                     </div>
                   </td>
                 </tr>
-              )
-            })}
-          </tbody>
-        </table>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
+
+      {/* Import Modal */}
+      {showImportModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(9,24,46,.45)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div className="card card-p" style={{ width: '100%', maxWidth: 440 }}>
+            <div className="row-between" style={{ marginBottom: 16 }}>
+              <h2 className="card-title">Importer un document</h2>
+              <button className="btn btn-ghost btn-sm" onClick={() => setShowImportModal(false)}>✕</button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div>
+                <label className="card-meta" style={{ display: 'block', marginBottom: 4 }}>Nom du document</label>
+                <input className="search-input" style={{ width: '100%', paddingLeft: 12 }} value={newDoc.nom} onChange={e => setNewDoc(prev => ({ ...prev, nom: e.target.value }))} />
+              </div>
+              <div className="section-grid-2">
+                <div>
+                  <label className="card-meta" style={{ display: 'block', marginBottom: 4 }}>Type de document</label>
+                  <select className="search-input" style={{ width: '100%', paddingLeft: 10 }} value={newDoc.type} onChange={e => setNewDoc(prev => ({ ...prev, type: e.target.value }))}>
+                    <option>Contrat</option>
+                    <option>Attestation</option>
+                    <option>Fiche d'inscription</option>
+                    <option>Règlement</option>
+                    <option>Pièce d'identité</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="card-meta" style={{ display: 'block', marginBottom: 4 }}>Apprenant concerné</label>
+                  <input className="search-input" style={{ width: '100%', paddingLeft: 12 }} value={newDoc.apprenant} onChange={e => setNewDoc(prev => ({ ...prev, apprenant: e.target.value }))} />
+                </div>
+              </div>
+            </div>
+
+            <div className="row" style={{ marginTop: 20, justifyContent: 'flex-end', gap: 10 }}>
+              <button className="btn btn-ghost btn-sm" onClick={() => setShowImportModal(false)}>Annuler</button>
+              <button className="btn btn-primary btn-sm" onClick={handleImportDoc}>Valider et importer</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Document Preview Modal */}
+      {previewDoc && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(9,24,46,.45)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div className="card card-p" style={{ width: '100%', maxWidth: 440, textAlign: 'center' }}>
+            <div className="avatar avatar-md avatar-navy" style={{ width: 44, height: 44, margin: '0 auto 12px' }}>
+              📄
+            </div>
+            <h2 className="page-title" style={{ fontSize: '1.15rem', marginBottom: 4 }}>{previewDoc.nom}</h2>
+            <p className="card-meta" style={{ marginBottom: 16 }}>{previewDoc.type} · Apprenant: {previewDoc.apprenant} · {previewDoc.taille}</p>
+
+            <div style={{ background: '#F8F9FB', borderRadius: 8, padding: '14px', marginBottom: 16, fontSize: '.78rem', color: '#5A6B7D' }}>
+              Document numérisé enregistré le {previewDoc.date} dans le système EDUOS.
+            </div>
+
+            <div className="row" style={{ gap: 10 }}>
+              <button className="btn btn-ghost btn-sm" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setPreviewDoc(null)}>Fermer</button>
+              <button className="btn btn-primary btn-sm" style={{ flex: 1, justifyContent: 'center' }} onClick={() => triggerToast(`Téléchargement de ${previewDoc.nom}…`)}>Télécharger PDF</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

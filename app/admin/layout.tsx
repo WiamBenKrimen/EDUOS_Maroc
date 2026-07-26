@@ -31,7 +31,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <aside className="dir-sidebar">
         <div className="dir-brand">
           <Link href="/admin/utilisateurs" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-            <Image src="/images/logo.png" alt="EDUOS MAROC" width={115} height={38} style={{ height: 38, width: 'auto', objectFit: 'contain' }} priority />
+            <Image src="/images/logo.png" alt="EDUOS MAROC" width={180} height={64} style={{ height: 64, width: 'auto', objectFit: 'contain', display: 'block' }} priority />
           </Link>
           <span className="dir-brand-role" style={{ marginLeft: 'auto', background: 'rgba(220,38,38,.08)', color: '#DC2626', padding: '3px 8px', borderRadius: 6 }}>Admin</span>
         </div>

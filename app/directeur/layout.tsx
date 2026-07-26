@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation'
 import { ReactNode, useEffect, useState } from 'react'
 import LogoutButton from '../logout-button'
 
-
 const navItems = [
   {
     label: 'Dashboard',
@@ -81,6 +80,9 @@ const navItems = [
 export default function DirecteurLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [showNotifs, setShowNotifs] = useState(false)
+  const [unreadNotifs, setUnreadNotifs] = useState(4)
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => setMenuOpen(false), [pathname])
 
@@ -92,9 +94,8 @@ export default function DirecteurLayout({ children }: { children: ReactNode }) {
   return (
     <div className="dir-shell">
       {menuOpen && (
-        <button
-          className="dir-overlay"
-          aria-label="Fermer"
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 90 }}
           onClick={() => setMenuOpen(false)}
         />
       )}
@@ -104,14 +105,14 @@ export default function DirecteurLayout({ children }: { children: ReactNode }) {
         {/* Brand */}
         <div className="dir-brand">
           <Link href="/directeur" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-            <Image src="/images/logo.png" alt="EDUOS MAROC" width={115} height={38} style={{ height: 38, width: 'auto', objectFit: 'contain' }} priority />
+            <Image src="/images/logo.png" alt="EDUOS MAROC" width={180} height={64} style={{ height: 64, width: 'auto', objectFit: 'contain', display: 'block' }} priority />
           </Link>
-          <span className="dir-brand-role" style={{ marginLeft: 'auto', background: 'rgba(27,58,107,.08)', color: '#1B3A6B', padding: '3px 8px', borderRadius: 6 }}>Direction</span>
+          <span className="dir-brand-role" style={{ marginLeft: 'auto' }}>Direction</span>
         </div>
 
         {/* Nav */}
         <nav className="dir-nav">
-          <div className="dir-nav-label">Menu</div>
+          <div className="dir-nav-label">Menu Principal</div>
           {navItems.map((item) => {
             const active = isActive(item)
             return (
@@ -127,36 +128,115 @@ export default function DirecteurLayout({ children }: { children: ReactNode }) {
           })}
         </nav>
 
-        {/* Footer */}
+        {/* Footer User */}
         <div className="dir-sidebar-footer">
           <div className="dir-user-avatar">AB</div>
           <div className="dir-user-info">
             <strong>Ahmed Bennani</strong>
-            <span>Directeur</span>
+            <span>Directeur Général</span>
           </div>
           <LogoutButton />
         </div>
       </aside>
 
-      {/* ── Main ── */}
+      {/* ── Main Content ── */}
       <div className="dir-content">
         {/* Topbar */}
         <header className="dir-topbar">
-          <button className="dir-menu-btn" onClick={() => setMenuOpen(true)} aria-label="Menu">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
-          </button>
-          <div className="dir-topbar-right">
-            <button className="dir-topbar-icon-btn" aria-label="Notifications">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-              </svg>
-              <span className="dir-notif-dot" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0F2347" strokeWidth="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
             </button>
-            <div className="dir-topbar-avatar">AB</div>
+
+            {/* Universal Search Bar */}
+            <div className="dir-search-wrap">
+              <svg
+                width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.2" strokeLinecap="round"
+                style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }}
+              >
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input
+                type="text"
+                className="dir-search-input"
+                placeholder="Rechercher (élèves, formateurs, cohortes...)"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Topbar Right */}
+          <div className="dir-topbar-right">
+            {/* Notification Bell */}
+            <div style={{ position: 'relative' }}>
+              <button
+                className="dir-topbar-icon-btn"
+                onClick={() => setShowNotifs(!showNotifs)}
+                aria-label="Notifications"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                </svg>
+                {unreadNotifs > 0 && <span className="dir-notif-badge">{unreadNotifs}</span>}
+              </button>
+
+              {/* Notification Dropdown */}
+              {showNotifs && (
+                <div style={{
+                  position: 'absolute',
+                  top: 48,
+                  right: 0,
+                  width: 320,
+                  background: '#FFFFFF',
+                  borderRadius: 14,
+                  boxShadow: '0 10px 30px rgba(15,35,71,0.15)',
+                  border: '1px solid #E2E8F0',
+                  zIndex: 100,
+                  overflow: 'hidden'
+                }}>
+                  <div style={{ padding: '14px 18px', background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, fontSize: '.84rem', color: '#0F2347' }}>Notifications Direction</span>
+                    <button
+                      onClick={() => setUnreadNotifs(0)}
+                      style={{ fontSize: '.72rem', color: '#1B3A6B', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}
+                    >
+                      Tout marquer lu
+                    </button>
+                  </div>
+                  <div style={{ maxHeight: 280, overflowY: 'auto' }}>
+                    <div style={{ padding: '12px 18px', borderBottom: '1px solid #F1F5F9' }}>
+                      <div style={{ fontSize: '.8rem', fontWeight: 700, color: '#0F2347' }}>Rapport financier Juin validé</div>
+                      <div style={{ fontSize: '.72rem', color: '#64748B', marginTop: 2 }}>CA total encaissé : 84 200 DH (+8.4%)</div>
+                    </div>
+                    <div style={{ padding: '12px 18px', borderBottom: '1px solid #F1F5F9' }}>
+                      <div style={{ fontSize: '.8rem', fontWeight: 700, color: '#0F2347' }}>5 renouvellements en attente</div>
+                      <div style={{ fontSize: '.72rem', color: '#64748B', marginTop: 2 }}>Relances automatiques envoyées par SMS</div>
+                    </div>
+                    <div style={{ padding: '12px 18px', borderBottom: '1px solid #F1F5F9' }}>
+                      <div style={{ fontSize: '.8rem', fontWeight: 700, color: '#0F2347' }}>Nouveau prospect qualifié</div>
+                      <div style={{ fontSize: '.72rem', color: '#64748B', marginTop: 2 }}>Sami Mansouri (Demande Formation B2)</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Profile Pill */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingLeft: 8, borderLeft: '1px solid #E2E8F0' }}>
+              <div className="dir-user-avatar" style={{ width: 36, height: 36 }}>AB</div>
+              <div className="dir-user-info">
+                <strong>Ahmed Bennani</strong>
+                <span>Directeur Général</span>
+              </div>
+            </div>
           </div>
         </header>
 
-        {/* Content */}
+        {/* Page Main Content */}
         <main className="dir-main">
           {children}
         </main>

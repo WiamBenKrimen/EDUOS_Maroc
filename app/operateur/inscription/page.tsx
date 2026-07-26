@@ -62,93 +62,100 @@ export default function InscriptionPage() {
     <div>
       {/* Toast Notification */}
       {successToast && (
-        <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 1100, background: '#059669', color: '#fff', padding: '12px 20px', borderRadius: 9, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '.85rem', boxShadow: '0 8px 24px rgba(5,150,105,.3)', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 1100, background: '#15803D', color: '#fff', padding: '12px 20px', borderRadius: 9, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '.85rem', boxShadow: '0 8px 24px rgba(21,128,61,.3)', display: 'flex', alignItems: 'center', gap: 10 }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
           Élève inscrit avec succès et contrat généré !
         </div>
       )}
 
       {/* Page Header */}
-      <div className="page-header">
-        <div className="page-header-left">
-          <div className="page-breadcrumb">
+      <div className="op-page-header">
+        <div>
+          <div className="op-breadcrumb">
             <span>Opérateur</span>
-            <span className="page-breadcrumb-sep">›</span>
-            <span style={{ color: '#1B3A6B' }}>Inscription</span>
+            <span className="op-breadcrumb-sep">›</span>
+            <span className="op-breadcrumb-active">Inscription</span>
           </div>
-          <h1 className="page-title">Nouvelle inscription</h1>
-          <p className="page-subtitle">Enregistrez un nouvel élève en 3 étapes simples</p>
+          <h1 className="op-page-title">Nouvelle inscription</h1>
+          <p className="op-page-subtitle">Enregistrez un nouvel élève en 3 étapes simples</p>
         </div>
-        <div className="page-header-actions">
-          <span className="badge badge-green">Étape {step + 1} / {STEPS.length}</span>
+        <div>
+          <span className="op-badge-step">Étape {step + 1} / {STEPS.length}</span>
         </div>
       </div>
 
-      {/* Step Indicator */}
-      <div className="card card-p" style={{ marginBottom: 24, display: 'flex', alignItems: 'center' }}>
-        {STEPS.map((s, i) => (
-          <div key={s.label} style={{ display: 'flex', alignItems: 'center', flex: i < STEPS.length - 1 ? 1 : 'none' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, cursor: i <= step ? 'pointer' : 'default' }} onClick={() => i <= step && setStep(i)}>
-              <div style={{
-                width: 38, height: 38, borderRadius: '50%',
-                background: i < step ? '#C9922A' : i === step ? '#1B3A6B' : 'rgba(27,58,107,.08)',
-                display: 'flex', alignItems: 'center', justifyCenter: 'center',
-                transition: 'background .25s',
-              }}>
-                {i < step ? (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
-                ) : (
-                  <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 13, color: i === step ? '#fff' : 'rgba(27,58,107,.4)' }}>{i + 1}</span>
-                )}
+      {/* Stepper Card */}
+      <div className="op-stepper">
+        {STEPS.map((s, i) => {
+          const isCompleted = i < step
+          const isActive = i === step
+          return (
+            <div key={s.label} style={{ display: 'flex', alignItems: 'center', flex: i < STEPS.length - 1 ? 1 : 'none' }}>
+              <div className="op-step-item" style={{ cursor: i <= step ? 'pointer' : 'default' }} onClick={() => i <= step && setStep(i)}>
+                <div className={`op-step-circle ${isActive ? 'active' : isCompleted ? 'completed' : 'inactive'}`}>
+                  {isCompleted ? (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
+                  ) : (
+                    i + 1
+                  )}
+                </div>
+                <div className="op-step-info">
+                  <span className="op-step-title" style={{ color: isActive ? '#0F2347' : isCompleted ? '#D97706' : '#94A3B8' }}>{s.label}</span>
+                  <span className="op-step-sub">{s.sub}</span>
+                </div>
               </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: '.78rem', color: i === step ? '#1B3A6B' : i < step ? '#C9922A' : '#94a3b8', whiteSpace: 'nowrap' }}>{s.label}</div>
-                <div style={{ fontSize: '.7rem', color: '#94a3b8', marginTop: 1 }}>{s.sub}</div>
-              </div>
+              {i < STEPS.length - 1 && (
+                <div className={`op-step-line ${i < step ? 'active' : ''}`} />
+              )}
             </div>
-            {i < STEPS.length - 1 && (
-              <div style={{ flex: 1, height: 2, background: i < step ? '#C9922A' : 'rgba(27,58,107,.1)', margin: '0 16px', marginBottom: 28, borderRadius: 2, transition: 'background .3s' }} />
-            )}
-          </div>
-        ))}
+          )
+        })}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 20, alignItems: 'start' }}>
-        {/* Form area */}
-        <div className="card card-p" style={{ padding: '30px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 24, alignItems: 'start' }}>
+        {/* Main Form area */}
+        <div className="op-card" style={{ padding: '28px 32px' }}>
           {/* Step 1 */}
           {step === 0 && (
             <div>
-              <h2 className="card-title" style={{ fontSize: '1.05rem', marginBottom: 20 }}>Informations élève</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div style={{ borderBottom: '2px solid #F1F5F9', paddingBottom: 14, marginBottom: 24 }}>
+                <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.1rem', color: '#0F2347', display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ width: 4, height: 18, background: '#D97706', borderRadius: 2 }} />
+                  Informations élève
+                </h2>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
                 <div>
-                  <label style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '.76rem', color: '#374151', marginBottom: 6 }}>Prénom</label>
-                  <input className="search-input" style={{ paddingLeft: 14 }} value={formData.prenom} onChange={e => handleInputChange('prenom', e.target.value)} placeholder="ex: Ahmed" />
+                  <label style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '.8rem', color: '#334155', marginBottom: 6 }}>Prénom</label>
+                  <input className="search-input" style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#FFFFFF' }} value={formData.prenom} onChange={e => handleInputChange('prenom', e.target.value)} placeholder="Ahmed" />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '.76rem', color: '#374151', marginBottom: 6 }}>Nom</label>
-                  <input className="search-input" style={{ paddingLeft: 14 }} value={formData.nom} onChange={e => handleInputChange('nom', e.target.value)} placeholder="ex: Cherkaoui" />
+                  <label style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '.8rem', color: '#334155', marginBottom: 6 }}>Nom</label>
+                  <input className="search-input" style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#FFFFFF' }} value={formData.nom} onChange={e => handleInputChange('nom', e.target.value)} placeholder="Cherkaoui" />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '.76rem', color: '#374151', marginBottom: 6 }}>Date de naissance</label>
-                  <input className="search-input" type="date" style={{ paddingLeft: 14 }} value={formData.dob} onChange={e => handleInputChange('dob', e.target.value)} />
+                  <label style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '.8rem', color: '#334155', marginBottom: 6 }}>Date de naissance</label>
+                  <div style={{ position: 'relative' }}>
+                    <input className="search-input" type="date" style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#FFFFFF' }} value={formData.dob} onChange={e => handleInputChange('dob', e.target.value)} />
+                  </div>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '.76rem', color: '#374151', marginBottom: 6 }}>Téléphone (WhatsApp)</label>
-                  <input className="search-input" style={{ paddingLeft: 14 }} value={formData.telephone} onChange={e => handleInputChange('telephone', e.target.value)} placeholder="+212 6XX XXX XXX" />
+                  <label style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '.8rem', color: '#334155', marginBottom: 6 }}>Téléphone (WhatsApp)</label>
+                  <input className="search-input" style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#FFFFFF' }} value={formData.telephone} onChange={e => handleInputChange('telephone', e.target.value)} placeholder="+212 661 234 567" />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '.76rem', color: '#374151', marginBottom: 6 }}>Adresse email</label>
-                  <input className="search-input" type="email" style={{ paddingLeft: 14 }} value={formData.email} onChange={e => handleInputChange('email', e.target.value)} placeholder="exemple@mail.com" />
+                  <label style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '.8rem', color: '#334155', marginBottom: 6 }}>Adresse email</label>
+                  <input className="search-input" type="email" style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#FFFFFF' }} value={formData.email} onChange={e => handleInputChange('email', e.target.value)} placeholder="ahmed.cherkaoui@mail.com" />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '.76rem', color: '#374151', marginBottom: 6 }}>Ville</label>
-                  <input className="search-input" style={{ paddingLeft: 14 }} value={formData.ville} onChange={e => handleInputChange('ville', e.target.value)} placeholder="ex: Casablanca" />
+                  <label style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '.8rem', color: '#334155', marginBottom: 6 }}>Ville</label>
+                  <input className="search-input" style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#FFFFFF' }} value={formData.ville} onChange={e => handleInputChange('ville', e.target.value)} placeholder="Casablanca" />
                 </div>
               </div>
-              <div style={{ marginTop: 16 }}>
-                <label style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '.76rem', color: '#374151', marginBottom: 6 }}>Notes complémentaires</label>
-                <textarea className="search-input" rows={3} style={{ paddingLeft: 14, resize: 'vertical' }} value={formData.notes} onChange={e => handleInputChange('notes', e.target.value)} placeholder="Informations supplémentaires, besoins spécifiques…" />
+              <div style={{ marginTop: 18 }}>
+                <label style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '.8rem', color: '#334155', marginBottom: 6 }}>Notes complémentaires</label>
+                <textarea className="search-input" rows={4} style={{ width: '100%', padding: '12px 14px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#FFFFFF', resize: 'vertical' }} value={formData.notes} onChange={e => handleInputChange('notes', e.target.value)} placeholder="Inscription recommandée par le centre Atlas." />
               </div>
             </div>
           )}
@@ -156,10 +163,15 @@ export default function InscriptionPage() {
           {/* Step 2 */}
           {step === 1 && (
             <div>
-              <h2 className="card-title" style={{ fontSize: '1.05rem', marginBottom: 6 }}>Choisir un groupe</h2>
-              <p className="card-meta" style={{ marginBottom: 20 }}>Sélectionnez le groupe d'affectation de l'élève</p>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
+              <div style={{ borderBottom: '2px solid #F1F5F9', paddingBottom: 14, marginBottom: 20 }}>
+                <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.1rem', color: '#0F2347', display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ width: 4, height: 18, background: '#D97706', borderRadius: 2 }} />
+                  Choisir un groupe
+                </h2>
+                <p style={{ fontSize: '.8rem', color: '#64748B', marginTop: 4 }}>Sélectionnez le groupe d'affectation de l'élève</p>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 24 }}>
                 {MOCK_GROUPS.map((g, gi) => {
                   const selected = selectedGroup === gi
                   return (
@@ -167,20 +179,20 @@ export default function InscriptionPage() {
                       key={g.id}
                       onClick={() => setSelectedGroup(gi)}
                       style={{
-                        padding: '16px 18px',
+                        padding: '16px 20px',
                         borderRadius: 10,
-                        border: `2px solid ${selected ? '#1B3A6B' : '#E8ECF2'}`,
-                        background: selected ? '#EBF0FA' : '#fff',
+                        border: `2px solid ${selected ? '#0F2347' : '#E2E8F0'}`,
+                        background: selected ? '#F8FAFC' : '#FFFFFF',
                         cursor: 'pointer',
-                        transition: 'all .15s',
+                        transition: 'all .15s ease',
                       }}
                     >
                       <div className="row-between" style={{ marginBottom: 6 }}>
-                        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '.9rem', color: '#1B3A6B' }}>{g.name}</span>
-                        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '.92rem', color: '#C9922A' }}>{g.price} DH / mois</span>
+                        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '.95rem', color: '#0F2347' }}>{g.name}</span>
+                        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '.95rem', color: '#D97706' }}>{g.price} DH / mois</span>
                       </div>
                       <div className="row-between">
-                        <span className="card-meta">{g.schedule} · Formateur: {g.formateur}</span>
+                        <span style={{ fontSize: '.78rem', color: '#64748B' }}>{g.schedule} · Formateur: {g.formateur}</span>
                         <span className={`badge ${g.spots <= 2 ? 'badge-red' : 'badge-green'}`}>{g.spots} places restantes</span>
                       </div>
                     </div>
@@ -188,15 +200,15 @@ export default function InscriptionPage() {
                 })}
               </div>
 
-              <div style={{ borderTop: '1px solid #EEF0F4', paddingTop: 20 }}>
-                <h3 className="card-title" style={{ fontSize: '.88rem', marginBottom: 12 }}>Plan de paiement</h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+              <div style={{ borderTop: '1px solid #F1F5F9', paddingTop: 20 }}>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '.9rem', color: '#0F2347', marginBottom: 14 }}>Plan de paiement</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
                   {PLANS.map((p) => {
                     const selected = selectedPlan === p.id
                     return (
-                      <div key={p.id} onClick={() => setSelectedPlan(p.id)} style={{ padding: '12px 14px', borderRadius: 9, border: `2px solid ${selected ? '#C9922A' : '#E8ECF2'}`, background: selected ? 'rgba(201,146,42,.08)' : '#fff', cursor: 'pointer', textAlign: 'center', transition: 'all .15s' }}>
-                        <div style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: '.84rem', color: selected ? '#C9922A' : '#1a2535' }}>{p.label}</div>
-                        <div style={{ fontSize: '.7rem', color: '#9AABBC', marginTop: 2 }}>{p.desc}</div>
+                      <div key={p.id} onClick={() => setSelectedPlan(p.id)} style={{ padding: '14px', borderRadius: 10, border: `2px solid ${selected ? '#D97706' : '#E2E8F0'}`, background: selected ? '#FEFCE8' : '#FFFFFF', cursor: 'pointer', textAlign: 'center', transition: 'all .15s ease' }}>
+                        <div style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: '.88rem', color: selected ? '#B45309' : '#0F2347' }}>{p.label}</div>
+                        <div style={{ fontSize: '.72rem', color: '#64748B', marginTop: 4 }}>{p.desc}</div>
                       </div>
                     )
                   })}
@@ -208,11 +220,16 @@ export default function InscriptionPage() {
           {/* Step 3 */}
           {step === 2 && (
             <div>
-              <h2 className="card-title" style={{ fontSize: '1.05rem', marginBottom: 6 }}>Confirmation de l'inscription</h2>
-              <p className="card-meta" style={{ marginBottom: 20 }}>Vérifiez les informations avant de valider et générer le contrat</p>
+              <div style={{ borderBottom: '2px solid #F1F5F9', paddingBottom: 14, marginBottom: 20 }}>
+                <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.1rem', color: '#0F2347', display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ width: 4, height: 18, background: '#D97706', borderRadius: 2 }} />
+                  Confirmation de l'inscription
+                </h2>
+                <p style={{ fontSize: '.8rem', color: '#64748B', marginTop: 4 }}>Vérifiez les informations avant de valider et générer le contrat</p>
+              </div>
 
-              <div style={{ background: '#F8F9FB', borderRadius: 10, padding: '18px 20px', marginBottom: 20, border: '1px solid #E8ECF2' }}>
-                <div className="card-title" style={{ fontSize: '.72rem', color: '#7A8CA0', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 12 }}>Récapitulatif du dossier</div>
+              <div style={{ background: '#F8FAFC', borderRadius: 10, padding: '20px', marginBottom: 24, border: '1px solid #E2E8F0' }}>
+                <div style={{ fontSize: '.75rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 14 }}>Récapitulatif du dossier</div>
                 {[
                   ['Nom & Prénom', `${formData.prenom} ${formData.nom}`],
                   ['Email', formData.email],
@@ -224,47 +241,51 @@ export default function InscriptionPage() {
                   ['Plan de paiement', plan.label],
                   ['Montant total', `${totalPrice} DH`],
                 ].map(([k, v]) => (
-                  <div key={k} className="row-between" style={{ padding: '7px 0', borderBottom: '1px solid #EEF0F4' }}>
-                    <span className="card-meta">{k}</span>
-                    <span style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: '.83rem', color: '#1a2535' }}>{v}</span>
+                  <div key={k} className="row-between" style={{ padding: '8px 0', borderBottom: '1px solid #F1F5F9' }}>
+                    <span style={{ fontSize: '.82rem', color: '#64748B' }}>{k}</span>
+                    <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: '.85rem', color: '#0F2347' }}>{v}</span>
                   </div>
                 ))}
               </div>
 
-              <button className="btn btn-primary" onClick={handleSubmitInscription} style={{ width: '100%', justifyContent: 'center', padding: '12px' }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <button className="btn-navy" onClick={handleSubmitInscription} style={{ width: '100%', justifyContent: 'center', padding: '14px' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                 Inscrire et générer le contrat PDF
               </button>
             </div>
           )}
         </div>
 
-        {/* Sidebar Summary & Nav Buttons */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div className="card card-p">
-            <div className="card-title" style={{ fontSize: '.72rem', color: '#7A8CA0', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 12 }}>Aperçu rapide</div>
-            {[
-              ['Élève', `${formData.prenom} ${formData.nom}`],
-              ['Groupe', group.name],
-              ['Tarif mensuel', `${group.price} DH`],
-              ['Plan choisi', plan.label],
-              ['Total estimé', `${totalPrice} DH`],
-            ].map(([k, v]) => (
-              <div key={k} className="row-between" style={{ padding: '8px 0', borderBottom: '1px solid #EEF0F4' }}>
-                <span className="card-meta">{k}</span>
-                <span style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: '.8rem', color: '#1a2535' }}>{v}</span>
-              </div>
-            ))}
+        {/* Sidebar Summary Card */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div className="op-card" style={{ padding: '24px' }}>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '.92rem', color: '#0F2347', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+              Aperçu rapide
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {[
+                ['Élève', `${formData.prenom} ${formData.nom}`],
+                ['Groupe', group.name],
+                ['Tarif mensuel', `${group.price} DH`],
+                ['Plan choisi', plan.label],
+                ['Total estimé', `${totalPrice} DH`],
+              ].map(([k, v]) => (
+                <div key={k} className="row-between" style={{ paddingBottom: 10, borderBottom: '1px solid #F1F5F9' }}>
+                  <span style={{ fontSize: '.8rem', color: '#64748B' }}>{k}</span>
+                  <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: '.84rem', color: '#0F2347' }}>{v}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ display: 'flex', gap: 12 }}>
             {step > 0 && (
-              <button className="btn btn-ghost" onClick={() => setStep(s => s - 1)} style={{ flex: 1, justifyContent: 'center' }}>
+              <button className="btn btn-ghost" onClick={() => setStep(s => s - 1)} style={{ flex: 1, justifyContent: 'center', border: '1px solid #E2E8F0' }}>
                 ← Retour
               </button>
             )}
             {step < 2 && (
-              <button className="btn btn-primary" onClick={() => setStep(s => s + 1)} style={{ flex: 1, justifyContent: 'center' }}>
+              <button className="btn-navy" onClick={() => setStep(s => s + 1)} style={{ flex: 1, justifyContent: 'center', padding: '12px' }}>
                 Suivant →
               </button>
             )}
@@ -282,7 +303,7 @@ export default function InscriptionPage() {
             <h2 className="page-title" style={{ fontSize: '1.25rem', marginBottom: 6 }}>Inscription validée !</h2>
             <p className="card-meta" style={{ marginBottom: 20 }}>L'élève <strong>{formData.prenom} {formData.nom}</strong> a été inscrit dans le groupe <strong>{group.name}</strong>.</p>
             
-            <div style={{ background: '#F8F9FB', borderRadius: 9, padding: '12px 14px', marginBottom: 20, textStyle: 'left', fontSize: '.78rem', color: '#374151', border: '1px solid #E8ECF2' }}>
+            <div style={{ background: '#F8F9FB', borderRadius: 9, padding: '12px 14px', marginBottom: 20, textAlign: 'left', fontSize: '.78rem', color: '#374151', border: '1px solid #E8ECF2' }}>
               <div>📄 <strong>Contrat #CTR-2026-{Math.floor(1000 + Math.random() * 9000)}</strong></div>
               <div style={{ color: '#7A8CA0', marginTop: 2 }}>Transmis à {formData.telephone} par WhatsApp</div>
             </div>

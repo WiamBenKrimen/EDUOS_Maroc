@@ -74,87 +74,140 @@ export default function OperateurPaiementsPage() {
     <div>
       {/* Toast */}
       {toastMessage && (
-        <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 1100, background: '#059669', color: '#fff', padding: '12px 20px', borderRadius: 9, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '.85rem', boxShadow: '0 8px 24px rgba(5,150,105,.3)', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 1100, background: '#15803D', color: '#fff', padding: '12px 20px', borderRadius: 9, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '.85rem', boxShadow: '0 8px 24px rgba(21,128,61,.3)', display: 'flex', alignItems: 'center', gap: 10 }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
           {toastMessage}
         </div>
       )}
 
       {/* Page Header */}
-      <div className="page-header">
-        <div className="page-header-left">
-          <div className="page-breadcrumb">
+      <div className="op-page-header">
+        <div>
+          <div className="op-breadcrumb">
             <span>Opérateur</span>
-            <span className="page-breadcrumb-sep">›</span>
-            <span style={{ color: '#1B3A6B' }}>Paiements</span>
+            <span className="op-breadcrumb-sep">›</span>
+            <span className="op-breadcrumb-active">Paiements</span>
           </div>
-          <h1 className="page-title">Suivi des paiements</h1>
-          <p className="page-subtitle">Gestion des mensualités et encaissements des apprenants</p>
+          <h1 className="op-page-title">Suivi des paiements</h1>
+          <p className="op-page-subtitle">Gestion des mensualités et encaissements des apprenants</p>
         </div>
-        <div className="page-header-actions">
-          <button className="btn btn-primary btn-sm" onClick={() => setShowAddModal(true)}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <div>
+          <button className="btn-navy" onClick={() => setShowAddModal(true)}>
             Enregistrer un paiement
           </button>
         </div>
       </div>
 
-      {/* KPI Stats */}
-      <div className="kpi-grid" style={{ marginBottom: 20 }}>
-        <div className="kpi-card">
-          <div className="row-between">
-            <span className="card-meta">Paiements réglés</span>
-            <span className="badge badge-green">Payé</span>
+      {/* 5 KPI Stat Cards Row */}
+      <div className="op-stats-row" style={{ gridTemplateColumns: 'repeat(5, 1fr)', gap: 14 }}>
+        <div className="op-stat-card" style={{ padding: '14px 16px' }}>
+          <div className="op-stat-icon gold" style={{ width: 42, height: 42 }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <ellipse cx="12" cy="6" rx="8" ry="3" />
+              <path d="M4 6v6c0 1.66 3.58 3 8 3s8-1.34 8-3V6" />
+              <path d="M4 12v6c0 1.66 3.58 3 8 3s8-1.34 8-3v-6" />
+            </svg>
           </div>
-          <div className="kpi-value" style={{ marginTop: 8, color: '#059669' }}>{stats.paye}</div>
+          <div className="op-stat-content">
+            <span className="op-stat-label">Paiements réglés</span>
+            <span className="op-stat-val" style={{ fontSize: '1.25rem' }}>{stats.paye}</span>
+          </div>
         </div>
 
-        <div className="kpi-card">
-          <div className="row-between">
-            <span className="card-meta">En attente</span>
-            <span className="badge badge-gold">À venir</span>
+        <div className="op-stat-card" style={{ padding: '14px 16px' }}>
+          <div className="op-stat-icon gold" style={{ width: 42, height: 42 }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
           </div>
-          <div className="kpi-value" style={{ marginTop: 8, color: '#C9922A' }}>{stats.attente}</div>
+          <div className="op-stat-content">
+            <span className="op-stat-label">En attente</span>
+            <span className="op-stat-val" style={{ fontSize: '1.25rem' }}>{stats.attente}</span>
+          </div>
         </div>
 
-        <div className="kpi-card">
-          <div className="row-between">
-            <span className="card-meta">En retard</span>
-            <span className="badge badge-red">Relance requise</span>
+        <div className="op-stat-card" style={{ padding: '14px 16px' }}>
+          <div className="op-stat-icon gold" style={{ width: 42, height: 42 }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
           </div>
-          <div className="kpi-value" style={{ marginTop: 8, color: '#DC2626' }}>{stats.retard}</div>
+          <div className="op-stat-content">
+            <span className="op-stat-label">En retard</span>
+            <span className="op-stat-val" style={{ fontSize: '1.25rem' }}>{stats.retard}</span>
+          </div>
         </div>
 
-        <div className="kpi-card">
-          <div className="row-between">
-            <span className="card-meta">Total encaissé</span>
-            <span className="badge badge-navy">Mois en cours</span>
+        <div className="op-stat-card" style={{ padding: '14px 16px' }}>
+          <div className="op-stat-icon gold" style={{ width: 42, height: 42 }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+            </svg>
           </div>
-          <div className="kpi-value" style={{ marginTop: 8, fontSize: '1.4rem' }}>{stats.totalEncaisse.toLocaleString('fr-FR')} DH</div>
+          <div className="op-stat-content">
+            <span className="op-stat-label">Total encaissé</span>
+            <span className="op-stat-val" style={{ fontSize: '1.15rem' }}>{stats.totalEncaisse.toLocaleString('fr-FR')} DH</span>
+          </div>
+        </div>
+
+        <div className="op-stat-card" style={{ padding: '14px 16px' }}>
+          <div className="op-stat-icon gold" style={{ width: 42, height: 42 }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+          </div>
+          <div className="op-stat-content">
+            <span className="op-stat-label">Mois en cours</span>
+            <span className="op-stat-val" style={{ fontSize: '1.05rem', whiteSpace: 'nowrap' }}>Juillet 2025</span>
+          </div>
         </div>
       </div>
 
       {/* Search & Filter Bar */}
-      <div className="card card-p" style={{ marginBottom: 16 }}>
-        <div className="row" style={{ gap: 12, flexWrap: 'wrap' }}>
-          <div className="search-wrap">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input className="search-input" placeholder="Rechercher un apprenant ou groupe…" value={search} onChange={e => setSearch(e.target.value)} />
+      <div className="op-card" style={{ padding: '14px 20px', marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1 }}>
+            <div style={{ position: 'relative', flex: 1, maxWidth: 360 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input className="search-input" placeholder="Rechercher un apprenant..." value={search} onChange={e => setSearch(e.target.value)} style={{ width: '100%', paddingLeft: 38, paddingRight: 14, padding: '9px 14px 9px 38px', border: '1px solid #E2E8F0', borderRadius: 8 }} />
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '.84rem', color: '#475569' }}>
+              <span>Statut :</span>
+              <select className="search-input" style={{ width: 130, padding: '8px 10px', border: '1px solid #E2E8F0', borderRadius: 8, background: '#FFF' }} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+                <option value="Tous les statuts">Tous</option>
+                <option value="Payé">Payé</option>
+                <option value="En attente">En attente</option>
+                <option value="En retard">En retard</option>
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '.84rem', color: '#475569' }}>
+              <span>Mois :</span>
+              <select className="search-input" style={{ width: 140, padding: '8px 10px', border: '1px solid #E2E8F0', borderRadius: 8, background: '#FFF' }}>
+                <option>Juillet 2025</option>
+                <option>Juin 2025</option>
+                <option>Mai 2025</option>
+              </select>
+            </div>
           </div>
 
-          <select className="search-input" style={{ width: 160, paddingLeft: 10 }} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-            <option>Tous les statuts</option>
-            <option>Payé</option>
-            <option>En attente</option>
-            <option>En retard</option>
-          </select>
-
-          <span className="card-meta" style={{ marginLeft: 'auto' }}>{filtered.length} résultat{filtered.length > 1 ? 's' : ''}</span>
+          <button className="btn btn-ghost" style={{ border: '1px solid #E2E8F0', borderRadius: 8, padding: '8px 16px', fontSize: '.84rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exporter
+          </button>
         </div>
       </div>
 
-      {/* Payments Table */}
-      <div className="card">
+      {/* Payments Data Table */}
+      <div className="op-card" style={{ overflow: 'hidden' }}>
         <div className="data-table-wrap">
           <table className="data-table">
             <thead>
@@ -166,70 +219,88 @@ export default function OperateurPaiementsPage() {
                 <th>Statut</th>
                 <th>Mode</th>
                 <th>Date</th>
-                <th>Actions</th>
+                <th style={{ textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map(p => (
-                <tr key={p.id}>
-                  <td style={{ fontWeight: 600, color: '#1a2535' }}>{p.nom}</td>
-                  <td style={{ color: '#5A6B7D' }}>{p.groupe}</td>
-                  <td style={{ color: '#5A6B7D' }}>{p.mois}</td>
-                  <td style={{ fontWeight: 800, color: '#1B3A6B' }}>{p.montant} DH</td>
-                  <td>
-                    <span className={`badge ${p.statut === 'Payé' ? 'badge-green' : p.statut === 'En attente' ? 'badge-gold' : 'badge-red'}`}>
-                      {p.statut}
-                    </span>
-                  </td>
-                  <td style={{ color: '#9AABBC', fontSize: '.78rem' }}>{p.mode}</td>
-                  <td style={{ color: '#9AABBC', fontSize: '.78rem' }}>{p.date}</td>
-                  <td>
-                    <div className="row" style={{ gap: 6 }}>
-                      {p.statut !== 'Payé' && (
-                        <button className="btn btn-primary btn-sm" style={{ padding: '4px 10px', fontSize: '.72rem' }} onClick={() => handleEncaisser(p.id)}>
-                          Encaisser
+              {filtered.map(p => {
+                const isPaid = p.statut === 'Payé'
+                const isPending = p.statut === 'En attente'
+                return (
+                  <tr key={p.id}>
+                    <td style={{ fontWeight: 700, color: '#0F2347' }}>{p.nom}</td>
+                    <td style={{ color: '#475569' }}>{p.groupe}</td>
+                    <td style={{ color: '#475569' }}>{p.mois}</td>
+                    <td style={{ fontWeight: 800, color: '#0F2347' }}>{p.montant} DH</td>
+                    <td>
+                      <span className={`op-status-underlined ${isPaid ? 'regle' : isPending ? 'attente' : 'retard'}`}>
+                        {isPaid ? 'Réglé' : p.statut}
+                      </span>
+                    </td>
+                    <td style={{ color: '#64748B', fontSize: '.82rem' }}>{p.mode}</td>
+                    <td style={{ color: '#64748B', fontSize: '.82rem' }}>{p.date}</td>
+                    <td>
+                      <div className="row" style={{ justifyContent: 'flex-end', gap: 8 }}>
+                        {!isPaid ? (
+                          <button className="btn-navy btn-sm" style={{ padding: '6px 14px', fontSize: '.78rem' }} onClick={() => handleEncaisser(p.id)}>
+                            Encaisser
+                          </button>
+                        ) : (
+                          <button className="btn btn-ghost btn-sm" style={{ border: '1px solid #E2E8F0', padding: '6px 12px', fontSize: '.78rem', fontWeight: 600 }} onClick={() => setSelectedReceipt(p)}>
+                            Reçu PDF
+                          </button>
+                        )}
+                        <button className="btn btn-ghost btn-sm" style={{ padding: '4px 6px', color: '#94A3B8' }} aria-label="Options">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
                         </button>
-                      )}
-                      <button className="btn btn-ghost btn-sm" style={{ padding: '4px 10px', fontSize: '.72rem' }} onClick={() => setSelectedReceipt(p)}>
-                        Reçu PDF
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
+        </div>
+
+        {/* Pagination Bar */}
+        <div style={{ padding: '14px 20px', background: '#FFFFFF', borderTop: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: '.82rem', color: '#64748B' }}>1–8 sur 8</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button className="btn btn-ghost btn-sm" style={{ border: '1px solid #E2E8F0', padding: '4px 10px' }}>‹</button>
+            <button style={{ width: 28, height: 28, borderRadius: 6, background: '#0F2347', color: '#FFF', border: 'none', fontWeight: 700, fontSize: '.8rem' }}>1</button>
+            <button className="btn btn-ghost btn-sm" style={{ border: '1px solid #E2E8F0', padding: '4px 10px' }}>›</button>
+          </div>
         </div>
       </div>
 
       {/* Register Payment Modal */}
       {showAddModal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(9,24,46,.45)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div className="card card-p" style={{ width: '100%', maxWidth: 440 }}>
-            <div className="row-between" style={{ marginBottom: 16 }}>
-              <h2 className="card-title">Enregistrer un règlement</h2>
+          <div className="op-card" style={{ width: '100%', maxWidth: 440, padding: '24px' }}>
+            <div className="row-between" style={{ marginBottom: 18 }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.1rem', color: '#0F2347' }}>Enregistrer un règlement</h2>
               <button className="btn btn-ghost btn-sm" onClick={() => setShowAddModal(false)}>✕</button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
-                <label className="card-meta" style={{ display: 'block', marginBottom: 4 }}>Nom de l'apprenant</label>
-                <input className="search-input" style={{ width: '100%', paddingLeft: 12 }} value={newPayment.nom} onChange={e => setNewPayment(prev => ({ ...prev, nom: e.target.value }))} />
+                <label style={{ display: 'block', fontSize: '.78rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Nom de l'apprenant</label>
+                <input className="search-input" style={{ width: '100%', padding: '10px 12px', border: '1px solid #E2E8F0', borderRadius: 8 }} value={newPayment.nom} onChange={e => setNewPayment(prev => ({ ...prev, nom: e.target.value }))} />
               </div>
               <div className="section-grid-2">
                 <div>
-                  <label className="card-meta" style={{ display: 'block', marginBottom: 4 }}>Groupe</label>
-                  <input className="search-input" style={{ width: '100%', paddingLeft: 12 }} value={newPayment.groupe} onChange={e => setNewPayment(prev => ({ ...prev, groupe: e.target.value }))} />
+                  <label style={{ display: 'block', fontSize: '.78rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Groupe</label>
+                  <input className="search-input" style={{ width: '100%', padding: '10px 12px', border: '1px solid #E2E8F0', borderRadius: 8 }} value={newPayment.groupe} onChange={e => setNewPayment(prev => ({ ...prev, groupe: e.target.value }))} />
                 </div>
                 <div>
-                  <label className="card-meta" style={{ display: 'block', marginBottom: 4 }}>Montant (DH)</label>
-                  <input type="number" className="search-input" style={{ width: '100%', paddingLeft: 12 }} value={newPayment.montant} onChange={e => setNewPayment(prev => ({ ...prev, montant: Number(e.target.value) }))} />
+                  <label style={{ display: 'block', fontSize: '.78rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Montant (DH)</label>
+                  <input type="number" className="search-input" style={{ width: '100%', padding: '10px 12px', border: '1px solid #E2E8F0', borderRadius: 8 }} value={newPayment.montant} onChange={e => setNewPayment(prev => ({ ...prev, montant: Number(e.target.value) }))} />
                 </div>
               </div>
               <div className="section-grid-2">
                 <div>
-                  <label className="card-meta" style={{ display: 'block', marginBottom: 4 }}>Mode de règlement</label>
-                  <select className="search-input" style={{ width: '100%', paddingLeft: 10 }} value={newPayment.mode} onChange={e => setNewPayment(prev => ({ ...prev, mode: e.target.value }))}>
+                  <label style={{ display: 'block', fontSize: '.78rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Mode de règlement</label>
+                  <select className="search-input" style={{ width: '100%', padding: '10px 12px', border: '1px solid #E2E8F0', borderRadius: 8 }} value={newPayment.mode} onChange={e => setNewPayment(prev => ({ ...prev, mode: e.target.value }))}>
                     <option>Espèces</option>
                     <option>Virement bancaire</option>
                     <option>Chèque</option>
@@ -237,15 +308,15 @@ export default function OperateurPaiementsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="card-meta" style={{ display: 'block', marginBottom: 4 }}>Mois concerné</label>
-                  <input className="search-input" style={{ width: '100%', paddingLeft: 12 }} value={newPayment.mois} onChange={e => setNewPayment(prev => ({ ...prev, mois: e.target.value }))} />
+                  <label style={{ display: 'block', fontSize: '.78rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Mois concerné</label>
+                  <input className="search-input" style={{ width: '100%', padding: '10px 12px', border: '1px solid #E2E8F0', borderRadius: 8 }} value={newPayment.mois} onChange={e => setNewPayment(prev => ({ ...prev, mois: e.target.value }))} />
                 </div>
               </div>
             </div>
 
-            <div className="row" style={{ marginTop: 20, justifyContent: 'flex-end', gap: 10 }}>
+            <div className="row" style={{ marginTop: 24, justifyContent: 'flex-end', gap: 10 }}>
               <button className="btn btn-ghost btn-sm" onClick={() => setShowAddModal(false)}>Annuler</button>
-              <button className="btn btn-primary btn-sm" onClick={handleAddPayment}>Enregistrer et émettre reçu</button>
+              <button className="btn-navy btn-sm" style={{ padding: '8px 16px' }} onClick={handleAddPayment}>Enregistrer et émettre reçu</button>
             </div>
           </div>
         </div>
@@ -254,23 +325,23 @@ export default function OperateurPaiementsPage() {
       {/* Receipt Modal */}
       {selectedReceipt && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(9,24,46,.45)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div className="card card-p" style={{ width: '100%', maxWidth: 420, textAlign: 'center' }}>
-            <div style={{ borderBottom: '1px solid #EEF0F4', paddingBottom: 12, marginBottom: 14 }}>
-              <div className="card-title" style={{ fontSize: '1.1rem', color: '#1B3A6B' }}>Reçu de Paiement</div>
-              <div className="card-meta">EDUOS MAROC · Centre Atlas</div>
+          <div className="op-card" style={{ width: '100%', maxWidth: 420, padding: '24px', textAlign: 'center' }}>
+            <div style={{ borderBottom: '1px solid #E5E7EB', paddingBottom: 14, marginBottom: 16 }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.15rem', color: '#0F2347' }}>Reçu de Paiement</div>
+              <div style={{ fontSize: '.78rem', color: '#64748B', marginTop: 2 }}>EDUOS MAROC · Centre Atlas</div>
             </div>
 
-            <div style={{ background: '#F8F9FB', borderRadius: 9, padding: '16px', marginBottom: 16, textAlign: 'left' }}>
-              <div className="row-between" style={{ padding: '4px 0' }}><span className="card-meta">Apprenant</span><strong>{selectedReceipt.nom}</strong></div>
-              <div className="row-between" style={{ padding: '4px 0' }}><span className="card-meta">Groupe</span><span>{selectedReceipt.groupe}</span></div>
-              <div className="row-between" style={{ padding: '4px 0' }}><span className="card-meta">Période</span><span>{selectedReceipt.mois}</span></div>
-              <div className="row-between" style={{ padding: '4px 0' }}><span className="card-meta">Montant réglé</span><strong style={{ color: '#059669', fontSize: '1.1rem' }}>{selectedReceipt.montant} DH</strong></div>
-              <div className="row-between" style={{ padding: '4px 0' }}><span className="card-meta">Mode</span><span>{selectedReceipt.mode !== '—' ? selectedReceipt.mode : 'Espèces'}</span></div>
+            <div style={{ background: '#F8FAFC', borderRadius: 10, padding: '16px', marginBottom: 20, textAlign: 'left', border: '1px solid #E2E8F0' }}>
+              <div className="row-between" style={{ padding: '6px 0' }}><span style={{ fontSize: '.84rem', color: '#64748B' }}>Apprenant</span><strong style={{ color: '#0F2347' }}>{selectedReceipt.nom}</strong></div>
+              <div className="row-between" style={{ padding: '6px 0' }}><span style={{ fontSize: '.84rem', color: '#64748B' }}>Groupe</span><span>{selectedReceipt.groupe}</span></div>
+              <div className="row-between" style={{ padding: '6px 0' }}><span style={{ fontSize: '.84rem', color: '#64748B' }}>Période</span><span>{selectedReceipt.mois}</span></div>
+              <div className="row-between" style={{ padding: '6px 0' }}><span style={{ fontSize: '.84rem', color: '#64748B' }}>Montant réglé</span><strong style={{ color: '#15803D', fontSize: '1.1rem' }}>{selectedReceipt.montant} DH</strong></div>
+              <div className="row-between" style={{ padding: '6px 0' }}><span style={{ fontSize: '.84rem', color: '#64748B' }}>Mode</span><span>{selectedReceipt.mode !== '—' ? selectedReceipt.mode : 'Espèces'}</span></div>
             </div>
 
             <div className="row" style={{ gap: 10 }}>
               <button className="btn btn-ghost btn-sm" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setSelectedReceipt(null)}>Fermer</button>
-              <button className="btn btn-primary btn-sm" style={{ flex: 1, justifyContent: 'center' }} onClick={() => window.print()}>Imprimer reçu</button>
+              <button className="btn-navy btn-sm" style={{ flex: 1, justifyContent: 'center' }} onClick={() => window.print()}>Imprimer reçu</button>
             </div>
           </div>
         </div>

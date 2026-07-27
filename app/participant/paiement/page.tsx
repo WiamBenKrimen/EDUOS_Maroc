@@ -1,518 +1,182 @@
 'use client'
-import { useState } from 'react'
 
-const NAVY = '#0F2347'
-const BLUE = '#1B3A6B'
-const GOLD = '#D97706'
+import { FormEvent, useMemo, useState } from 'react'
 
-const INITIAL_HISTORY = [
-  { id: 1, mois: 'Janvier 2025', montant: 450, date: '01 Jan 2025', methode: 'Virement bancaire', statut: 'Payé', recu: 'Recu_Janvier_2025.pdf' },
-  { id: 2, mois: 'Décembre 2024', montant: 450, date: '01 Déc 2024', methode: 'Espèces', statut: 'Payé', recu: 'Recu_Decembre_2024.pdf' },
-  { id: 3, mois: 'Novembre 2024', montant: 450, date: '03 Nov 2024', methode: 'Virement bancaire', statut: 'Payé', recu: 'Recu_Novembre_2024.pdf' },
-  { id: 4, mois: 'Octobre 2024', montant: 450, date: '01 Oct 2024', methode: 'Espèces', statut: 'Payé', recu: 'Recu_Octobre_2024.pdf' },
-  { id: 5, mois: 'Septembre 2024', montant: 450, date: '15 Sep 2024', methode: 'Virement bancaire', statut: 'Payé', recu: 'Recu_Septembre_2024.pdf' },
-  { id: 6, mois: 'Février 2025', montant: 450, date: '—', methode: '—', statut: 'En attente', recu: null },
+const INITIAL_PAYMENTS = [
+  { id: 1, period: 'Janvier 2025', amount: 450, date: '01 Jan 2025', method: 'Virement bancaire', status: 'Payé', reference: 'EDU-2501-0842' },
+  { id: 2, period: 'Décembre 2024', amount: 450, date: '01 Déc 2024', method: 'Espèces', status: 'Payé', reference: 'EDU-2412-0764' },
+  { id: 3, period: 'Novembre 2024', amount: 450, date: '03 Nov 2024', method: 'Virement bancaire', status: 'Payé', reference: 'EDU-2411-0618' },
+  { id: 4, period: 'Octobre 2024', amount: 450, date: '01 Oct 2024', method: 'Espèces', status: 'Payé', reference: 'EDU-2410-0531' },
+  { id: 5, period: 'Septembre 2024', amount: 450, date: '15 Sep 2024', method: 'Virement bancaire', status: 'Payé', reference: 'EDU-2409-0426' },
+  { id: 6, period: 'Août 2024', amount: 450, date: '05 Aoû 2024', method: 'Carte bancaire', status: 'Payé', reference: 'EDU-2408-0361' },
+  { id: 7, period: 'Juillet 2024', amount: 450, date: '02 Juil 2024', method: 'Virement bancaire', status: 'Payé', reference: 'EDU-2407-0284' },
+  { id: 8, period: 'Juin 2024', amount: 450, date: '01 Juin 2024', method: 'Espèces', status: 'Payé', reference: 'EDU-2406-0197' },
 ]
 
+type Payment = typeof INITIAL_PAYMENTS[number]
+
 export default function PaiementPage() {
-  const [history, setHistory] = useState(INITIAL_HISTORY)
-  const [showModal, setShowModal] = useState(false)
-  const [activeTab, setActiveTab] = useState<'virement' | 'carte' | 'especes'>('virement')
+  const [selected, setSelected] = useState<Payment | null>(null)
+  const [showPayment, setShowPayment] = useState(false)
+  const [processing, setProcessing] = useState(false)
+  const [paid, setPaid] = useState(false)
+  const [showBankDetails, setShowBankDetails] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
-  
-  // Card form state
-  const [cardNumber, setCardNumber] = useState('')
-  const [cardExpiry, setCardExpiry] = useState('')
-  const [cardCvc, setCardCvc] = useState('')
-  const [isProcessing, setIsProcessing] = useState(false)
+  const [query, setQuery] = useState('')
+  const [methodFilter, setMethodFilter] = useState('Tous')
+  const [page, setPage] = useState(1)
+  const perPage = 4
+  const filteredPayments = useMemo(() => INITIAL_PAYMENTS.filter((payment) =>
+    `${payment.period} ${payment.reference} ${payment.method}`.toLowerCase().includes(query.toLowerCase()) &&
+    (methodFilter === 'Tous' || payment.method === methodFilter)
+  ), [query, methodFilter])
+  const pageCount = Math.max(1, Math.ceil(filteredPayments.length / perPage))
+  const visiblePayments = filteredPayments.slice((page - 1) * perPage, page * perPage)
 
-  const triggerToast = (msg: string) => {
-    setToast(msg)
-    setTimeout(() => setToast(null), 3500)
+  const notify = (message: string) => {
+    setToast(message)
+    window.setTimeout(() => setToast(null), 2800)
   }
 
-  const downloadReceipt = (recuName: string, month: string) => {
-    const textContent = `EDUOS MAROC - REÇU DE PAIEMENT\n` +
-      `----------------------------------------\n` +
-      `Apprenant: Yasmine Benali\n` +
-      `Formation: Anglais B2 Intermédiaire\n` +
-      `Mois: ${month}\n` +
-      `Montant: 450 DH (TTC)\n` +
-      `Statut: Réglé & Confirmé\n` +
-      `Organisme: EDUOS MAROC - Hassan, Rabat\n` +
-      `----------------------------------------\n` +
-      `Merci pour votre confiance!`
-
-    const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = recuName
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
+  const download = (payment: Payment) => {
+    const text = `EDUOS MAROC — REÇU\nRéférence : ${payment.reference}\nPériode : ${payment.period}\nMontant : ${payment.amount} DH\nDate : ${payment.date}\nMode : ${payment.method}\nParticipant : Yasmine Bennani`
+    const url = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `Recu_${payment.reference}.txt`
+    link.click()
     URL.revokeObjectURL(url)
-    triggerToast(`Téléchargement de ${recuName} démarré !`)
+    notify('Votre reçu a été téléchargé.')
   }
 
-  const downloadAllStatements = () => {
-    const content = `EDUOS MAROC - RELEVÉ GLOBAL DE PAIEMENT\n` +
-      `Apprenant: Yasmine Benali\n` +
-      `Dernière mise à jour: 2025\n` +
-      `========================================\n` +
-      history.map(h => `${h.mois} | ${h.montant} DH | ${h.statut} | ${h.methode}`).join('\n')
-
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `Releve_Paiements_Yasmine_Benali.pdf`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
+  const exportAll = () => {
+    const rows = INITIAL_PAYMENTS.map((p) => `${p.period} | ${p.amount} DH | ${p.date} | ${p.reference}`).join('\n')
+    const url = URL.createObjectURL(new Blob([`RELEVÉ EDUOS\n\n${rows}`], { type: 'text/plain;charset=utf-8' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'Releve_paiements_EDUOS.txt'
+    link.click()
     URL.revokeObjectURL(url)
-    triggerToast(`Exportation du relevé complet effectuée.`)
+    notify('Le relevé complet a été exporté.')
   }
 
-  const copyRIB = () => {
-    navigator.clipboard.writeText('MA64 2307 8000 0012 3456 7890 1192')
-    triggerToast('N° RIB (CIH Bank) copié dans le presse-papier !')
-  }
-
-  const handleOnlinePayment = (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsProcessing(true)
-    setTimeout(() => {
-      setIsProcessing(false)
-      setShowModal(false)
-      setHistory(prev => prev.map(item => {
-        if (item.mois === 'Février 2025') {
-          return {
-            ...item,
-            statut: 'Payé',
-            methode: 'Carte Bancaire (CMI)',
-            date: 'Aujourd\'hui',
-            recu: 'Recu_Fevrier_2025.pdf'
-          }
-        }
-        return item
-      }))
-      triggerToast('Paiement de 450 DH effectué avec succès ! Votre reçu est disponible.')
-    }, 1500)
+  const pay = (event: FormEvent) => {
+    event.preventDefault()
+    setProcessing(true)
+    window.setTimeout(() => {
+      setProcessing(false)
+      setPaid(true)
+      setShowPayment(false)
+      notify('Paiement de 450 DH confirmé avec succès.')
+    }, 1200)
   }
 
   return (
-    <div>
-      {/* Toast */}
-      {toast && (
-        <div style={{
-          position: 'fixed',
-          bottom: 24,
-          right: 24,
-          background: '#0F2347',
-          color: '#fff',
-          padding: '12px 20px',
-          borderRadius: 10,
-          boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
-          fontSize: '0.85rem',
-          fontWeight: 600,
-          zIndex: 9999,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10
-        }}>
-          <span style={{ color: '#10B981' }}>✓</span>
-          {toast}
-        </div>
-      )}
+    <div className="pay-pro-page">
+      {toast && <div className="part-toast"><span>✓</span>{toast}</div>}
+      <header className="pay-pro-header">
+        <div><div className="page-breadcrumb"><span>EDUOS</span><span>›</span><span>Paiements</span></div><h1>Situation financière</h1><p>Consultez vos échéances et gérez vos règlements.</p></div>
+        <button onClick={exportAll}>↓ Exporter le relevé</button>
+      </header>
 
-      {/* Header */}
-      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 900, fontSize: 24, color: NAVY, marginBottom: 4 }}>Mes paiements</h1>
-          <p style={{ fontSize: 13.5, color: '#64748b' }}>Gérez vos mensualités, réglez vos frais et téléchargez vos reçus officiels.</p>
-        </div>
-        <button
-          onClick={downloadAllStatements}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '10px 16px',
-            borderRadius: 9,
-            background: '#fff',
-            border: '1px solid #E2E8F0',
-            fontSize: '0.82rem',
-            fontWeight: 700,
-            color: NAVY,
-            cursor: 'pointer',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-          }}
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Exporter le relevé
-        </button>
-      </div>
-
-      {/* KPI & Status Banner */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginBottom: 24 }}>
-        {/* Card 1: Status */}
-        <div style={{ background: '#fff', borderRadius: 14, padding: 22, border: '1px solid #E2E8F0', borderLeft: '4px solid #10B981', boxShadow: '0 2px 8px rgba(15,35,71,0.04)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: '#ECFDF5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-            </div>
-            <div>
-              <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, fontSize: 16, color: '#065F46' }}>Statut : Compte en règle</div>
-              <div style={{ fontSize: 12.5, color: '#64748b', marginTop: 2 }}>Aucun retard enregistre sur votre cursus</div>
-            </div>
-          </div>
-          <div style={{ padding: '12px 14px', background: '#F8FAFC', borderRadius: 10, border: '1px solid #F1F5F9' }}>
-            <div style={{ fontSize: 11.5, color: '#94A3B8', marginBottom: 2 }}>Dernier paiement validé</div>
-            <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: 14, color: NAVY }}>01 Janvier 2025 — 450 DH</div>
-            <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>Méthode : Virement bancaire CIH</div>
-          </div>
-        </div>
-
-        {/* Card 2: Next Payment */}
-        <div style={{ background: '#fff', borderRadius: 14, padding: 22, border: '1px solid #E2E8F0', borderTop: `4px solid ${GOLD}`, boxShadow: '0 2px 8px rgba(15,35,71,0.04)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>Prochaine mensualité</div>
-              <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 900, fontSize: 34, color: NAVY, lineHeight: 1 }}>450 <span style={{ fontSize: 16, fontWeight: 700 }}>DH</span></div>
-            </div>
-            <span style={{ fontSize: 11.5, fontWeight: 700, color: GOLD, background: '#FEF3C7', borderRadius: 99, padding: '4px 12px', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Échéance : 01 Fév. 2025</span>
+      <section className="pay-ledger">
+        <main className="pay-ledger-main">
+          <div className="pay-ledger-intro">
+            <span>RELEVÉ 2024 — 2025</span>
+            <h2>Vos mensualités</h2>
+            <p>Une lecture simple de tous les règlements liés à votre formation Anglais B2.</p>
           </div>
 
-          <div style={{ marginTop: 18 }}>
-            <button
-              onClick={() => setShowModal(true)}
-              style={{
-                width: '100%',
-                padding: '12px',
-                borderRadius: 10,
-                border: 'none',
-                background: NAVY,
-                color: '#fff',
-                fontFamily: "'Plus Jakarta Sans', sans-serif",
-                fontWeight: 800,
-                fontSize: 14,
-                cursor: 'pointer',
-                boxShadow: '0 4px 14px rgba(15,35,71,0.2)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8
-              }}
-            >
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-              Payer maintenant
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* History table */}
-      <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 2px 8px rgba(15,35,71,0.04)' }}>
-        <div style={{ padding: '18px 24px', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FAFAFA' }}>
-          <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, fontSize: 15, color: NAVY }}>Historique des règlements</h2>
-          <span style={{ fontSize: 12, color: '#64748b' }}>6 mensualités listées</span>
-        </div>
-
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ background: '#F8FAFC' }}>
-              {['Mois', 'Montant', 'Date de règlement', 'Méthode', 'Statut', 'Action'].map((h) => (
-                <th key={h} style={{ padding: '12px 20px', textAlign: 'left', fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: 11.5, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', borderBottom: '1px solid #E2E8F0' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {history.map((h, i) => {
-              const paid = h.statut === 'Payé'
-              return (
-                <tr key={h.id} style={{ borderBottom: i < history.length - 1 ? '1px solid #F1F5F9' : 'none' }}>
-                  <td style={{ padding: '14px 20px', fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: 13.5, color: NAVY }}>{h.mois}</td>
-                  <td style={{ padding: '14px 20px', fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, fontSize: 14, color: paid ? NAVY : GOLD }}>{h.montant} DH</td>
-                  <td style={{ padding: '14px 20px', fontSize: 13, color: '#64748b' }}>{h.date}</td>
-                  <td style={{ padding: '14px 20px', fontSize: 13, color: '#64748b' }}>{h.methode}</td>
-                  <td style={{ padding: '14px 20px' }}>
-                    <span style={{
-                      fontSize: 11.5,
-                      fontWeight: 700,
-                      fontFamily: "'Plus Jakarta Sans', sans-serif",
-                      color: paid ? '#065F46' : GOLD,
-                      background: paid ? '#ECFDF5' : '#FEF3C7',
-                      borderRadius: 99,
-                      padding: '4px 12px',
-                    }}>
-                      {h.statut}
-                    </span>
-                  </td>
-                  <td style={{ padding: '14px 20px' }}>
-                    {paid ? (
-                      <button
-                        onClick={() => downloadReceipt(h.recu || `Recu_${h.mois}.pdf`, h.mois)}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          padding: '6px 12px',
-                          borderRadius: 7,
-                          border: '1px solid #CBD5E1',
-                          background: '#fff',
-                          fontFamily: "'Plus Jakarta Sans', sans-serif",
-                          fontWeight: 700,
-                          fontSize: 12,
-                          color: NAVY,
-                          cursor: 'pointer',
-                          boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-                        }}
-                      >
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                        Reçu PDF
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => setShowModal(true)}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          padding: '6px 12px',
-                          borderRadius: 7,
-                          border: 'none',
-                          background: GOLD,
-                          fontFamily: "'Plus Jakarta Sans', sans-serif",
-                          fontWeight: 700,
-                          fontSize: 12,
-                          color: '#fff',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        Régler
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Payment Modal */}
-      {showModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(15, 35, 71, 0.6)',
-          backdropFilter: 'blur(4px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: 20
-        }}>
-          <div style={{
-            background: '#fff',
-            borderRadius: 16,
-            width: '100%',
-            maxWidth: 520,
-            boxShadow: '0 20px 50px rgba(0,0,0,0.25)',
-            overflow: 'hidden',
-            animation: 'fadeIn 0.2s ease-out'
-          }}>
-            {/* Modal Header */}
-            <div style={{ padding: '20px 24px', background: NAVY, color: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <h3 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, fontSize: 17, margin: 0 }}>Règlement de la mensualité</h3>
-                <p style={{ fontSize: 12, color: '#94A3B8', margin: '2px 0 0' }}>Montant à payer : <strong style={{ color: '#F59E0B' }}>450 DH</strong> (Février 2025)</p>
+          <div className="pay-ledger-track" aria-label="Progression des mensualités">
+            {['SEP', 'OCT', 'NOV', 'DÉC', 'JAN', 'FÉV'].map((month, index) => (
+              <div key={month} className={index < 5 || paid ? 'complete' : 'current'}>
+                <i>{index < 5 || paid ? '✓' : '6'}</i><span>{month}</span>
               </div>
-              <button
-                onClick={() => setShowModal(false)}
-                style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: 20, cursor: 'pointer', opacity: 0.8 }}
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Modal Tabs */}
-            <div style={{ display: 'flex', borderBottom: '1px solid #E2E8F0', background: '#F8FAFC' }}>
-              {[
-                { id: 'virement', label: 'Virement bancaire' },
-                { id: 'carte', label: 'Carte bancaire' },
-                { id: 'especes', label: 'Espèces (Agence)' },
-              ].map(t => (
-                <button
-                  key={t.id}
-                  onClick={() => setActiveTab(t.id as any)}
-                  style={{
-                    flex: 1,
-                    padding: '12px 10px',
-                    border: 'none',
-                    borderBottom: activeTab === t.id ? `3px solid ${NAVY}` : '3px solid transparent',
-                    background: activeTab === t.id ? '#fff' : 'transparent',
-                    fontFamily: "'Plus Jakarta Sans', sans-serif",
-                    fontWeight: activeTab === t.id ? 800 : 600,
-                    fontSize: 13,
-                    color: activeTab === t.id ? NAVY : '#64748b',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Modal Content */}
-            <div style={{ padding: 24 }}>
-              {activeTab === 'virement' && (
-                <div>
-                  <p style={{ fontSize: 13, color: '#475569', marginBottom: 16, lineHeight: 1.5 }}>
-                    Effectuez votre virement vers le compte bancaire officiel d'<strong>EDUOS MAROC</strong> ci-dessous. Mentionnez votre nom et code participant en motif.
-                  </p>
-                  
-                  <div style={{ background: '#F1F5F9', borderRadius: 10, padding: 16, border: '1px solid #E2E8F0', marginBottom: 16 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Banque</div>
-                    <div style={{ fontSize: 13.5, fontWeight: 800, color: NAVY, marginBottom: 8 }}>CIH BANK — Agence Rabat Hassan</div>
-
-                    <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Numéro RIB</div>
-                    <div style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 14, color: NAVY, display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 }}>
-                      <span>MA64 2307 8000 0012 3456 7890 1192</span>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={copyRIB}
-                    style={{
-                      width: '100%',
-                      padding: '11px',
-                      borderRadius: 9,
-                      border: `1.5px solid ${BLUE}`,
-                      background: '#fff',
-                      color: BLUE,
-                      fontFamily: "'Plus Jakarta Sans', sans-serif",
-                      fontWeight: 700,
-                      fontSize: 13,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 8
-                    }}
-                  >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                    Copier le RIB bancaire
-                  </button>
-
-                  <div style={{ marginTop: 16, fontSize: 11.5, color: '#64748b', fontStyle: 'italic', textAlign: 'center' }}>
-                    Une fois le virement émis, la validation s'effectue sous 24h ouvrées.
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'carte' && (
-                <form onSubmit={handleOnlinePayment}>
-                  <div style={{ marginBottom: 14 }}>
-                    <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 4 }}>Numéro de Carte Bancaire</label>
-                    <input
-                      type="text"
-                      placeholder="4000 1234 5678 9010"
-                      value={cardNumber}
-                      onChange={e => setCardNumber(e.target.value)}
-                      required
-                      style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13 }}
-                    />
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 18 }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 4 }}>Expiration (MM/AA)</label>
-                      <input
-                        type="text"
-                        placeholder="12/27"
-                        value={cardExpiry}
-                        onChange={e => setCardExpiry(e.target.value)}
-                        required
-                        style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13 }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 4 }}>CVC / CVV</label>
-                      <input
-                        type="text"
-                        placeholder="123"
-                        value={cardCvc}
-                        onChange={e => setCardCvc(e.target.value)}
-                        required
-                        style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13 }}
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isProcessing}
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      borderRadius: 9,
-                      border: 'none',
-                      background: isProcessing ? '#94A3B8' : BLUE,
-                      color: '#fff',
-                      fontFamily: "'Plus Jakarta Sans', sans-serif",
-                      fontWeight: 800,
-                      fontSize: 14,
-                      cursor: isProcessing ? 'wait' : 'pointer'
-                    }}
-                  >
-                    {isProcessing ? 'Traitement sécurisé en cours...' : 'Payer 450 DH de façon sécurisée'}
-                  </button>
-                </form>
-              )}
-
-              {activeTab === 'especes' && (
-                <div>
-                  <p style={{ fontSize: 13, color: '#475569', lineHeight: 1.5, marginBottom: 14 }}>
-                    Vous pouvez régler directement en espèces au secrétariat de notre centre aux horaires d'ouverture :
-                  </p>
-
-                  <div style={{ background: '#F8FAFC', borderRadius: 10, padding: 16, border: '1px solid #E2E8F0', marginBottom: 16 }}>
-                    <div style={{ fontWeight: 800, color: NAVY, fontSize: 14, marginBottom: 4 }}>EDUOS MAROC — Rabat Hassan</div>
-                    <div style={{ fontSize: 12.5, color: '#64748b' }}>Avenue Fal Ould Oumeir, Rabat</div>
-                    <div style={{ fontSize: 12.5, color: '#64748b', marginTop: 4 }}>Horaires : Lundi à Samedi — 08h30 à 18h30</div>
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      setShowModal(false)
-                      triggerToast('Note enregistrée : Merci de vous présenter au secrétariat.')
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '11px',
-                      borderRadius: 9,
-                      border: 'none',
-                      background: NAVY,
-                      color: '#fff',
-                      fontFamily: "'Plus Jakarta Sans', sans-serif",
-                      fontWeight: 700,
-                      fontSize: 13,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Fermer et régler sur place
-                  </button>
-                </div>
-              )}
-            </div>
+            ))}
           </div>
-        </div>
-      )}
+
+          <div className="pay-ledger-title">
+            <div><span>OPÉRATIONS VALIDÉES</span><h3>Historique des règlements</h3></div>
+            <span>{filteredPayments.length} reçus disponibles</span>
+          </div>
+
+          <div className="pay-ledger-tools">
+            <label><span>⌕</span><input value={query} onChange={(e) => { setQuery(e.target.value); setPage(1) }} placeholder="Rechercher une période ou référence..." /></label>
+            <select value={methodFilter} onChange={(e) => { setMethodFilter(e.target.value); setPage(1) }}>
+              <option>Tous</option><option>Virement bancaire</option><option>Carte bancaire</option><option>Espèces</option>
+            </select>
+          </div>
+
+          <div className="pay-ledger-rows">
+            {visiblePayments.map((payment) => (
+              <button key={payment.id} onClick={() => setSelected(payment)}>
+                <time><strong>{payment.date.slice(0, 2)}</strong><span>{payment.date.slice(3)}</span></time>
+                <span className="pay-ledger-row-copy"><strong>{payment.period}</strong><small>{payment.method} · {payment.reference}</small></span>
+                <span className="pay-ledger-row-status">Confirmé</span>
+                <strong className="pay-ledger-row-amount">{payment.amount} DH</strong>
+                <span className="pay-ledger-row-action">Voir le reçu →</span>
+              </button>
+            ))}
+            {visiblePayments.length === 0 && <div className="pay-ledger-empty">Aucun règlement ne correspond à votre recherche.</div>}
+          </div>
+          <div className="pay-ledger-pagination">
+            <span>Page {page} sur {pageCount}</span>
+            <div><button disabled={page === 1} onClick={() => setPage((value) => value - 1)}>←</button>{Array.from({ length: pageCount }, (_, index) => <button className={page === index + 1 ? 'active' : ''} key={index} onClick={() => setPage(index + 1)}>{index + 1}</button>)}<button disabled={page === pageCount} onClick={() => setPage((value) => value + 1)}>→</button></div>
+          </div>
+        </main>
+
+        <aside className="pay-ledger-side">
+          <div className="pay-ledger-next">
+            <div className="pay-ledger-next-head"><span>PROCHAINE MENSUALITÉ</span><i>{paid ? 'PAYÉ' : 'À VENIR'}</i></div>
+            <div className="pay-ledger-next-body"><div className="pay-ledger-calendar"><strong>01</strong><span>FÉV<small>2025</small></span></div><div className="pay-ledger-price"><span>Anglais B2 · Février</span><strong>450 DH</strong></div></div>
+            {!paid ? <button onClick={() => setShowPayment(true)}>Régler par carte <span>→</span></button> : <div className="pay-ledger-done">✓ Paiement confirmé</div>}
+          </div>
+
+          <div className="pay-ledger-method">
+            <span>MOYENS DE PAIEMENT</span>
+            <button onClick={() => setShowBankDetails(true)}><i><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3 10h18M5 10v8m4-8v8m6-8v8m4-8v8M2 21h20M12 3 2 8h20z"/></svg></i><p><strong>Virement bancaire</strong><small>Afficher les coordonnées bancaires</small></p><em>→</em></button>
+            <button onClick={() => setShowPayment(true)}><i><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="2" y="5" width="20" height="14"/><path d="M2 10h20"/></svg></i><p><strong>Carte bancaire</strong><small>Payer immédiatement en ligne</small></p><em>→</em></button>
+            <button onClick={() => notify('Présentez-vous à l’accueil EDUOS avec votre identifiant EDU-P-2025-084.')}><i><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></i><p><strong>Espèces</strong><small>Voir les instructions de paiement</small></p><em>→</em></button>
+          </div>
+
+          <div className="pay-ledger-help">
+            <span>BESOIN D’AIDE ?</span>
+            <p>Une anomalie sur un reçu ou une date de paiement ?</p>
+            <button onClick={() => notify('Votre demande a été envoyée à l’administration.')}>Écrire à l’administration</button>
+          </div>
+        </aside>
+      </section>
+
+      {selected && <div className="pay-pro-overlay" onMouseDown={(e) => e.target === e.currentTarget && setSelected(null)}>
+        <article className="pay-pro-receipt">
+          <div className="pay-pro-receipt-head"><span>REÇU DE PAIEMENT</span><button onClick={() => setSelected(null)}>×</button></div>
+          <div className="pay-pro-receipt-brand"><strong>EDUOS</strong><span>MAROC</span></div><h2>{selected.amount} DH</h2><span className="pay-pro-paid">✓ Paiement confirmé</span>
+          <dl><div><dt>Période</dt><dd>{selected.period}</dd></div><div><dt>Date</dt><dd>{selected.date}</dd></div><div><dt>Méthode</dt><dd>{selected.method}</dd></div><div><dt>Référence</dt><dd>{selected.reference}</dd></div><div><dt>Participant</dt><dd>Yasmine Bennani</dd></div></dl>
+          <button className="pay-pro-download" onClick={() => download(selected)}>Télécharger le reçu</button>
+        </article>
+      </div>}
+
+      {showPayment && <div className="pay-pro-overlay" onMouseDown={(e) => e.target === e.currentTarget && setShowPayment(false)}>
+        <form className="pay-pro-form" onSubmit={pay}>
+          <div className="pay-pro-receipt-head"><span>PAIEMENT SÉCURISÉ</span><button type="button" onClick={() => setShowPayment(false)}>×</button></div>
+          <h2>Régler 450 DH</h2><p>Mensualité de février 2025 · Anglais B2</p>
+          <label>Nom sur la carte<input required placeholder="YASMINE BENNANI" /></label>
+          <label>Numéro de carte<input required inputMode="numeric" maxLength={19} placeholder="0000 0000 0000 0000" /></label>
+          <div className="pay-pro-form-row"><label>Expiration<input required placeholder="MM / AA" /></label><label>CVC<input required inputMode="numeric" maxLength={3} placeholder="000" /></label></div>
+          <button className="pay-pro-submit" disabled={processing}>{processing ? 'Traitement en cours…' : 'Confirmer le paiement · 450 DH'}</button>
+          <small>Vos données de paiement sont protégées et chiffrées.</small>
+        </form>
+      </div>}
+
+      {showBankDetails && <div className="pay-pro-overlay" onMouseDown={(e) => e.target === e.currentTarget && setShowBankDetails(false)}>
+        <article className="pay-pro-receipt pay-bank-details">
+          <div className="pay-pro-receipt-head"><span>COORDONNÉES BANCAIRES</span><button onClick={() => setShowBankDetails(false)}>×</button></div>
+          <div className="pay-pro-receipt-brand"><strong>EDUOS</strong><span>MAROC</span></div>
+          <h2>Virement bancaire</h2><p>Indiquez votre identifiant participant dans le motif du virement.</p>
+          <dl><div><dt>Banque</dt><dd>CIH Bank</dd></div><div><dt>RIB</dt><dd>230 780 000012345678901192</dd></div><div><dt>IBAN</dt><dd>MA64 2307 8000 0012 3456 7890 1192</dd></div><div><dt>Motif</dt><dd>EDU-P-2025-084</dd></div></dl>
+          <button className="pay-pro-download" onClick={() => { navigator.clipboard.writeText('MA64 2307 8000 0012 3456 7890 1192'); notify('IBAN copié dans le presse-papiers.') }}>Copier l’IBAN</button>
+        </article>
+      </div>}
     </div>
   )
 }

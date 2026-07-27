@@ -95,6 +95,7 @@ const navItems = [
 export default function OperateurLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const user = getUser()
 
   useEffect(() => setMenuOpen(false), [pathname])
@@ -102,22 +103,21 @@ export default function OperateurLayout({ children }: { children: ReactNode }) {
   const initials = user?.nom ? user.nom.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'SA'
 
   return (
-    <div className="op-shell">
+    <div className={`op-shell${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
       {menuOpen && (
         <button className="dir-overlay" aria-label="Fermer" onClick={() => setMenuOpen(false)} />
       )}
 
       {/* ── Sidebar ── */}
       <aside className={`op-sidebar${menuOpen ? ' is-open' : ''}`}>
+        <button className="universal-sidebar-toggle" onClick={() => setSidebarCollapsed(!sidebarCollapsed)} aria-label={sidebarCollapsed ? 'Ouvrir le menu' : 'Réduire le menu'}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d={sidebarCollapsed ? 'm9 18 6-6-6-6' : 'm15 18-6-6 6-6'}/></svg>
+        </button>
         {/* Brand */}
         <div className="op-brand">
           <Link href="/operateur/inscription" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-            <Image src="/images/logo.png" alt="EDUOS MAROC" width={180} height={64} style={{ height: 64, width: 'auto', objectFit: 'contain', display: 'block' }} priority />
+            <Image className="sidebar-logo" src="/images/logo.png" alt="EDUOS MAROC" width={180} height={64} priority />
           </Link>
-          <div className="op-role-pill">
-            <span className="op-role-dot" />
-            <span>OPÉRATEUR</span>
-          </div>
         </div>
 
         {/* Nav */}
@@ -146,7 +146,6 @@ export default function OperateurLayout({ children }: { children: ReactNode }) {
         {/* Footer */}
         <div className="op-sidebar-footer">
           <div className="op-user-card">
-            <div className="op-user-avatar">{initials}</div>
             <div className="op-user-info">
               <strong>{user?.nom ?? 'Sarah A.'}</strong>
               <span>{user?.email ?? 'operateur@eduos.ma'}</span>

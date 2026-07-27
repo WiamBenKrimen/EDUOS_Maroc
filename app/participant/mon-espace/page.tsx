@@ -1,279 +1,346 @@
 'use client'
-import { useState } from 'react'
+
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
+import ParticipantOverview from '../participant-overview'
+
+type Detail = {
+  eyebrow: string
+  title: string
+  description: string
+  icon: 'calendar' | 'chart' | 'bell' | 'document'
+  facts: { label: string; value: string }[]
+  action?: { label: string; href: string }
+}
 
 const SEANCES = [
-  { jour: 'Lun', date: '20', done: true },
-  { jour: 'Mer', date: '22', done: true },
-  { jour: 'Ven', date: '24', done: true },
-  { jour: 'Lun', date: '27', done: false },
-  { jour: 'Mer', date: '29', done: false },
+  { jour: 'Lun', date: '20', status: 'Présent', done: true, time: '10h00 – 12h00' },
+  { jour: 'Mer', date: '22', status: 'Présent', done: true, time: '10h00 – 12h00' },
+  { jour: 'Ven', date: '24', status: 'Présent', done: true, time: '09h00 – 11h00' },
+  { jour: 'Lun', date: '27', status: 'À venir', done: false, time: '10h00 – 12h00' },
+  { jour: 'Mer', date: '29', status: 'À venir', done: false, time: '10h00 – 12h00' },
+]
+
+const PROGRESS = [
+  { label: 'Grammaire', pct: 78, note: 'Très bon niveau' },
+  { label: 'Vocabulaire', pct: 65, note: 'En progression' },
+  { label: 'Expression écrite', pct: 72, note: 'Objectif presque atteint' },
+  { label: 'Compréhension orale', pct: 55, note: 'À renforcer' },
 ]
 
 const NOTIFS = [
-  { id: 1, text: 'Rappel : votre cours est demain à 10h — Salle 1', time: 'Il y a 1h', color: '#0F2347', bg: '#F1F5F9', read: false },
-  { id: 2, text: 'Prochain paiement : 450 DH le 1er Février 2025', time: 'Il y a 4h', color: '#D97706', bg: '#FEF3C7', read: false },
-  { id: 3, text: 'Nouveaux exercices disponibles : Semaine 4 — Présent perfect', time: 'Hier 14h', color: '#059669', bg: '#DCFCE7', read: true },
+  { id: 1, title: 'Rappel de cours', text: 'Votre cours est demain à 10h — Salle 1', time: 'Il y a 1h', tone: 'blue', read: false },
+  { id: 2, title: 'Paiement à venir', text: 'Prochaine mensualité : 450 DH le 1er février 2025', time: 'Il y a 4h', tone: 'gold', read: false },
+  { id: 3, title: 'Nouveau contenu', text: 'Exercices disponibles : Semaine 4 — Present perfect', time: 'Hier à 14h', tone: 'green', read: true },
 ]
 
 const DOCS = [
-  { name: 'Attestation de présence.pdf', type: 'PDF', date: '10 Jan 2025', iconColor: '#7C3AED' },
-  { name: 'Programme Anglais B2.pdf', type: 'PDF', date: '2 Jan 2025', iconColor: '#0F2347' },
-  { name: 'Règlement intérieur.pdf', type: 'PDF', date: '1 Jan 2025', iconColor: '#D97706' },
+  { name: 'Attestation de présence.pdf', type: 'Attestation', date: '10 Jan 2025', size: '284 Ko' },
+  { name: 'Programme Anglais B2.pdf', type: 'Programme', date: '2 Jan 2025', size: '1,2 Mo' },
+  { name: 'Règlement intérieur.pdf', type: 'Administratif', date: '1 Jan 2025', size: '620 Ko' },
 ]
 
-export default function MonEspacePage() {
-  const progress = 68
-  const [toastMessage, setToastMessage] = useState<string | null>(null)
-  const [notifList, setNotifList] = useState(NOTIFS)
+const ICONS = {
+  calendar: <><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="m9 16 2 2 4-5"/></>,
+  chart: <><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-7"/></>,
+  bell: <><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M14 21h-4"/></>,
+  document: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h6"/></>,
+}
 
-  const triggerToast = (msg: string) => {
-    setToastMessage(msg)
-    setTimeout(() => setToastMessage(null), 3000)
-  }
-
-  const markNotifRead = (id: number) => {
-    setNotifList(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
-    triggerToast('Notification marquée comme lue.')
-  }
-
-  const handleDownloadDoc = (docName: string) => {
-    triggerToast(`Téléchargement de "${docName}" démarré...`)
-  }
+function DetailPage({ detail, onClose }: { detail: Detail; onClose: () => void }) {
+  useEffect(() => {
+    const close = (event: KeyboardEvent) => event.key === 'Escape' && onClose()
+    document.addEventListener('keydown', close)
+    return () => document.removeEventListener('keydown', close)
+  }, [onClose])
 
   return (
-    <div>
-      {/* Toast alert */}
-      {toastMessage && (
-        <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 1000, background: '#0F2347', color: '#FFF', padding: '12px 20px', borderRadius: 10, boxShadow: '0 10px 25px rgba(0,0,0,0.2)', fontSize: '.84rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 10, animation: 'fadeIn .2s ease' }}>
-          <span>✓</span> {toastMessage}
-        </div>
-      )}
-
-      {/* ── Page header ── */}
-      <div className="page-header" style={{ marginBottom: 24 }}>
-        <div className="page-header-left">
-          <div className="page-breadcrumb">
-            <span>EDUOS</span>
-            <span className="page-breadcrumb-sep">›</span>
-            <span style={{ color: '#0F2347' }}>Mon espace</span>
-          </div>
-          <h1 className="page-title">Bonjour, Yasmine</h1>
-          <p className="page-subtitle">Anglais B2 · Groupe du matin · Lundi 25 juillet 2025</p>
-        </div>
-        <div className="page-header-actions" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div className="part-user-avatar" style={{ width: 40, height: 40, fontSize: '.9rem' }}>YB</div>
-          <span className="badge badge-green" style={{ background: '#DCFCE7', color: '#15803D', border: 'none', padding: '6px 12px', fontWeight: 700 }}>
-            Formation en cours
-          </span>
-        </div>
+    <section className="part-detail-page" aria-label={detail.title}>
+      <div className="part-detail-toolbar">
+        <button className="part-back-button" onClick={onClose}>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m15 18-6-6 6-6"/></svg>
+          Retour à mon espace
+        </button>
+        <span>Dernière mise à jour : aujourd’hui</span>
       </div>
 
-      {/* ── KPI row ── */}
-      <div className="op-stats-row" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
-        <div className="op-stat-card">
-          <div className="op-stat-icon" style={{ background: '#E0F2FE', color: '#0369A1' }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          </div>
-          <div className="op-stat-content">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-              <span className="op-stat-label">Taux de présence</span>
-              <span style={{ fontSize: '.68rem', fontWeight: 700, color: '#15803D', background: '#DCFCE7', padding: '2px 6px', borderRadius: 4 }}>+5% ce mois</span>
-            </div>
-            <span className="op-stat-val">87 %</span>
-          </div>
-        </div>
-
-        <div className="op-stat-card">
-          <div className="op-stat-icon gold">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
-          </div>
-          <div className="op-stat-content">
-            <span className="op-stat-label">Programme complété</span>
-            <span className="op-stat-val">{progress} %</span>
-          </div>
-        </div>
-
-        <div className="op-stat-card">
-          <div className="op-stat-icon green">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-          </div>
-          <div className="op-stat-content">
-            <span className="op-stat-label">Prochain paiement</span>
-            <span className="op-stat-val">450 DH</span>
-          </div>
-        </div>
-
-        <div className="op-stat-card">
-          <div className="op-stat-icon" style={{ background: '#F3E8FF', color: '#7E22CE' }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-          </div>
-          <div className="op-stat-content">
-            <span className="op-stat-label">Séances effectuées</span>
-            <span className="op-stat-val">24</span>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Middle grid ── */}
-      <div className="section-grid-3" style={{ marginBottom: 24 }}>
-        {/* Prochain cours */}
-        <div className="card card-p" style={{ border: '1px solid #E5E7EB' }}>
-          <div className="card-header" style={{ marginBottom: 14 }}>
-            <h2 className="card-title" style={{ fontSize: '1rem', color: '#0F2347' }}>Prochain cours</h2>
-            <span className="badge badge-navy" style={{ background: '#0F2347', color: '#FFF' }}>Dans 2 jours</span>
-          </div>
-
-          <div style={{ textAlign: 'center', padding: '12px 0 20px', background: '#F8FAFC', borderRadius: 10, marginBottom: 16 }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '.78rem', color: '#64748B', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 6 }}>
-              Lundi 20 Janvier
-            </div>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '2.5rem', color: '#0F2347', letterSpacing: '-.04em', lineHeight: 1 }}>
-              10h00
-            </div>
-            <div style={{ fontSize: '.8rem', color: '#64748B', marginTop: 6, fontWeight: 500 }}>Salle 1 · M. Karimi</div>
-            
-            <button
-              onClick={() => triggerToast('Détails du cours consultés.')}
-              className="btn btn-navy btn-sm"
-              style={{ marginTop: 14, background: '#0F2347', color: '#FFF', width: '85%', justifyContent: 'center' }}
-            >
-              📖 Voir le programme de la séance
-            </button>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {SEANCES.map((s, i) => (
-              <div key={i} className="row-between" style={{ padding: '6px 0', borderBottom: i < SEANCES.length - 1 ? '1px solid #F1F5F9' : 'none' }}>
-                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '.8rem', color: '#334155' }}>
-                  {s.jour} {s.date} Jan
-                </span>
-                <span className={`badge ${s.done ? 'badge-green' : 'badge-gray'}`} style={{ fontSize: '.7rem', fontWeight: 600 }}>
-                  {s.done ? '✓ Présent' : 'À venir'}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Progression */}
-        <div className="card card-p" style={{ border: '1px solid #E5E7EB' }}>
-          <div className="card-header" style={{ marginBottom: 16 }}>
-            <h2 className="card-title" style={{ fontSize: '1rem', color: '#0F2347' }}>Progression B2</h2>
-            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '.95rem', color: '#D97706' }}>{progress}%</span>
-          </div>
-
-          <div style={{ marginBottom: 20 }}>
-            <div className="row-between" style={{ marginBottom: 8 }}>
-              <span style={{ fontSize: '.78rem', color: '#64748B', fontWeight: 500 }}>Programme général</span>
-            </div>
-            <div className="progress-bar" style={{ height: 10, marginBottom: 20, background: '#E2E8F0', borderRadius: 5, overflow: 'hidden' }}>
-              <div className="progress-fill" style={{ width: `${progress}%`, background: 'linear-gradient(90deg, #D97706, #F59E0B)', height: '100%' }} />
-            </div>
-
-            {[
-              { label: 'Grammaire', pct: 78 },
-              { label: 'Vocabulaire', pct: 65 },
-              { label: 'Expression écrite', pct: 72 },
-              { label: 'Compréhension orale', pct: 55 },
-            ].map(item => (
-              <div key={item.label} style={{ marginBottom: 14 }}>
-                <div className="row-between" style={{ marginBottom: 5 }}>
-                  <span style={{ fontSize: '.78rem', color: '#1E293B', fontFamily: 'var(--font-display)', fontWeight: 600 }}>{item.label}</span>
-                  <span style={{ fontSize: '.75rem', color: '#64748B', fontWeight: 700 }}>{item.pct}%</span>
-                </div>
-                <div className="progress-bar" style={{ height: 7, background: '#F1F5F9', borderRadius: 4, overflow: 'hidden' }}>
-                  <div className="progress-fill" style={{ width: `${item.pct}%`, background: '#0F2347', height: '100%' }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Notifications */}
-        <div className="card card-p" style={{ border: '1px solid #E5E7EB' }}>
-          <div className="card-header" style={{ marginBottom: 14 }}>
-            <h2 className="card-title" style={{ fontSize: '1rem', color: '#0F2347' }}>Notifications</h2>
-            <span className="badge badge-navy" style={{ background: '#0F2347', color: '#FFF' }}>{notifList.filter(n => !n.read).length}</span>
+      <div className="part-detail-hero">
+        <div className="part-detail-head">
+          <div className="part-detail-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+              {ICONS[detail.icon]}
+            </svg>
           </div>
           <div>
-            {notifList.map((n) => (
-              <div
-                key={n.id}
-                onClick={() => markNotifRead(n.id)}
-                className="list-item"
-                style={{
-                  padding: '10px 12px',
-                  borderRadius: 8,
-                  marginBottom: 8,
-                  background: n.read ? '#FFFFFF' : '#F8FAFC',
-                  border: '1px solid #F1F5F9',
-                  cursor: 'pointer',
-                  transition: 'background .15s ease'
-                }}
-              >
-                <div style={{ width: 34, height: 34, borderRadius: 8, background: n.bg, color: n.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/>
-                  </svg>
-                </div>
-                <div style={{ flex: 1, minWidth: 0, marginLeft: 10 }}>
-                  <div className="list-item-title" style={{ fontSize: '.78rem', fontWeight: n.read ? 500 : 700, color: n.read ? '#64748B' : '#0F2347' }}>{n.text}</div>
-                  <div className="list-item-sub" style={{ fontSize: '.7rem', color: '#94A3B8', marginTop: 2 }}>{n.time}</div>
-                </div>
-              </div>
-            ))}
+            <span className="part-detail-eyebrow">{detail.eyebrow}</span>
+            <h1>{detail.title}</h1>
+            <p>{detail.description}</p>
           </div>
+          <span className="part-detail-status"><i /> Information à jour</span>
         </div>
       </div>
 
-      {/* ── Documents Section ── */}
-      <div className="card card-p" style={{ border: '1px solid #E5E7EB' }}>
-        <div className="card-header" style={{ marginBottom: 16 }}>
-          <h2 className="card-title" style={{ fontSize: '1.05rem', color: '#0F2347' }}>Mes récents documents</h2>
-          <Link href="/participant/documents" className="btn btn-ghost btn-sm" style={{ color: '#0F2347', fontWeight: 700 }}>
-            Voir tous →
-          </Link>
+      <div className="part-detail-layout">
+        <article className="part-detail-main-card">
+          <div className="part-detail-card-title">
+            <div><span>Détails</span><h2>Informations principales</h2></div>
+            <span className="part-detail-card-icon">i</span>
+          </div>
+        <div className="part-detail-facts">
+          {detail.facts.map((fact) => (
+            <div className="part-detail-fact" key={fact.label}>
+              <span>{fact.label}</span>
+              <strong>{fact.value}</strong>
+            </div>
+          ))}
         </div>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Document</th>
-              <th>Type</th>
-              <th>Date</th>
-              <th style={{ textAlign: 'right' }}>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {DOCS.map(d => (
-              <tr key={d.name}>
-                <td>
-                  <div className="row" style={{ gap: 10 }}>
-                    <div style={{ width: 32, height: 32, borderRadius: 8, background: `${d.iconColor}14`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={d.iconColor} strokeWidth="2" strokeLinecap="round">
-                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                      </svg>
-                    </div>
-                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, color: '#0F2347', fontSize: '.84rem' }}>{d.name}</span>
-                  </div>
-                </td>
-                <td><span className="badge badge-gray" style={{ fontSize: '.72rem' }}>{d.type}</span></td>
-                <td style={{ color: '#64748B', fontSize: '.8rem' }}>{d.date}</td>
-                <td style={{ textAlign: 'right' }}>
-                  <button
-                    onClick={() => handleDownloadDoc(d.name)}
-                    className="btn btn-outline btn-sm"
-                    style={{ borderColor: '#0F2347', color: '#0F2347', fontWeight: 600 }}
-                  >
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                    Télécharger
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        </article>
+
+        <aside className="part-detail-side-card">
+          <span className="part-section-kicker">Actions rapides</span>
+          <h2>Que souhaitez-vous faire ?</h2>
+        {detail.action && (
+          <Link href={detail.action.href} className="part-detail-action">
+            {detail.action.label}
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6"/></svg>
+          </Link>
+        )}
+        <div className="part-detail-help">
+          <span className="part-help-icon">?</span>
+          <div><strong>Besoin d’aide ?</strong><small>Contactez l’administration depuis votre espace participant.</small></div>
+        </div>
+        </aside>
       </div>
+    </section>
+  )
+}
+
+export default function MonEspacePage() {
+  const [detail, setDetail] = useState<Detail | null>(null)
+  const [notifList, setNotifList] = useState(NOTIFS)
+  const [toast, setToast] = useState<string | null>(null)
+
+  const notify = (message: string) => {
+    setToast(message)
+    window.setTimeout(() => setToast(null), 2600)
+  }
+
+  const showCourse = () => setDetail({
+    eyebrow: 'Prochaine séance',
+    title: 'Present perfect & conversation',
+    description: 'Une séance pratique pour consolider le Present Perfect et gagner en fluidité à l’oral.',
+    icon: 'calendar',
+    facts: [
+      { label: 'Date', value: 'Lundi 27 janvier 2025' },
+      { label: 'Horaire', value: '10h00 – 12h00' },
+      { label: 'Salle', value: 'Salle 1 · 1er étage' },
+      { label: 'Formateur', value: 'M. Karimi' },
+      { label: 'À préparer', value: 'Exercices de la semaine 4' },
+    ],
+    action: { label: 'Ouvrir les ressources du cours', href: '/participant/ressources' },
+  })
+
+  const showProgress = (item?: typeof PROGRESS[number]) => setDetail({
+    eyebrow: item ? 'Détail de compétence' : 'Votre parcours',
+    title: item?.label || 'Progression Anglais B2',
+    description: item ? `${item.note}. Consultez vos résultats et les ressources recommandées pour continuer à progresser.` : 'Votre progression est calculée à partir des cours suivis, exercices terminés et évaluations.',
+    icon: 'chart',
+    facts: item ? [
+      { label: 'Progression', value: `${item.pct}%` },
+      { label: 'Dernière évaluation', value: item.pct >= 70 ? 'Très satisfaisant' : 'En cours d’acquisition' },
+      { label: 'Objectif du module', value: '80%' },
+      { label: 'Conseil', value: item.pct < 60 ? '2 exercices recommandés' : 'Continuez ainsi' },
+    ] : [
+      { label: 'Programme complété', value: '68%' },
+      { label: 'Séances suivies', value: '24 sur 28' },
+      { label: 'Exercices terminés', value: '18 sur 24' },
+      { label: 'Prochain objectif', value: 'Atteindre 75%' },
+    ],
+    action: { label: 'Voir mes rapports détaillés', href: '/participant/rapports' },
+  })
+
+  const openNotification = (notification: typeof NOTIFS[number]) => {
+    setNotifList((current) => current.map((item) => item.id === notification.id ? { ...item, read: true } : item))
+    setDetail({
+      eyebrow: 'Notification',
+      title: notification.title,
+      description: notification.text,
+      icon: 'bell',
+      facts: [
+        { label: 'Reçue', value: notification.time },
+        { label: 'Statut', value: 'Lue' },
+        { label: 'Formation', value: 'Anglais B2 · Groupe matin' },
+      ],
+      action: notification.id === 2
+        ? { label: 'Consulter mes paiements', href: '/participant/paiement' }
+        : { label: 'Consulter les ressources', href: '/participant/ressources' },
+    })
+  }
+
+  const openDocument = (document: typeof DOCS[number]) => setDetail({
+    eyebrow: document.type,
+    title: document.name,
+    description: 'Ce document officiel est disponible dans votre espace personnel. Vous pouvez le consulter ou le télécharger à tout moment.',
+    icon: 'document',
+    facts: [
+      { label: 'Ajouté le', value: document.date },
+      { label: 'Format', value: 'PDF' },
+      { label: 'Taille', value: document.size },
+      { label: 'Accès', value: 'Privé · Compte participant' },
+    ],
+    action: { label: 'Voir tous mes documents', href: '/participant/documents' },
+  })
+
+  return (
+    <div className="part-dashboard">
+      {toast && <div className="part-toast"><span>✓</span>{toast}</div>}
+      {detail && <DetailPage detail={detail} onClose={() => setDetail(null)} />}
+
+      {!detail && <ParticipantOverview onCourse={showCourse} onProgress={()=>showProgress()} onNotice={openNotification} notices={notifList} />}
+
+      {false && <div className="participant-editorial mx-auto space-y-7">
+        <section className="editorial-hero relative overflow-hidden bg-[#0f2347] px-8 py-12 text-white md:px-14 md:py-16">
+          <div className="absolute -right-24 -top-32 h-80 w-80 rounded-full border-[55px] border-white/[0.035]" />
+          <div className="relative z-10 max-w-4xl">
+            <div className="max-w-2xl">
+              <div className="mb-9 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[.16em] text-slate-400"><span>EDUOS</span><span className="text-amber-400">/</span><span>Mon espace</span></div>
+              <span className="text-[11px] font-extrabold uppercase tracking-[.18em] text-amber-400">Lundi 27 janvier · Bonjour Yasmine</span>
+              <h1 className="editorial-title mt-4 text-4xl font-black leading-[1.08] tracking-[-.04em] md:text-5xl">Votre apprentissage,<br/><span className="text-amber-400">en un seul regard.</span></h1>
+              <p className="mt-5 max-w-xl text-sm leading-6 text-slate-300">Retrouvez votre prochaine séance, votre progression et les dernières informations utiles de votre parcours Anglais B2.</p>
+            </div>
+            <button onClick={showCourse} className="group mt-12 block w-full border-0 border-t border-white/20 bg-transparent pt-7 text-left text-white">
+              <span className="text-[10px] font-black tracking-[.16em] text-amber-400">PROCHAINE SÉANCE · DANS 2 JOURS</span>
+              <span className="mt-5 block text-sm font-bold text-slate-300">Lundi 27 janvier · 10:00 — 12:00</span>
+              <h2 className="mt-2 text-2xl font-black leading-tight">Present perfect & conversation</h2>
+              <span className="mt-4 block text-xs text-slate-400">Salle 1 · M. Karimi · 2 heures</span>
+              <span className="mt-6 inline-flex items-center gap-3 text-xs font-bold text-amber-400">Voir la séance <i className="font-normal not-italic">→</i></span>
+            </button>
+          </div>
+        </section>
+
+        <section className="editorial-links bg-white px-7 py-3 md:px-10">
+          {[
+            {n:'01',title:'Continuer à apprendre',sub:'9 ressources disponibles',href:'/participant/ressources'},
+            {n:'02',title:'Ma présence',sub:'87% de participation',href:'#presence'},
+            {n:'03',title:'Gérer mes paiements',sub:'450 DH · 1er février',href:'/participant/paiement'},
+            {n:'04',title:'Mes documents',sub:'3 nouveaux fichiers',href:'/participant/documents'},
+          ].map((item,index)=>index===1?
+            <button key={item.n} onClick={()=>showProgress()} className="group flex w-full items-start gap-5 border-0 border-b border-slate-200 bg-transparent py-5 text-left"><span className="pt-1 text-xs font-black text-amber-600">{item.n}</span><span className="flex-1"><strong className="block text-sm text-[#0f2347]">{item.title}</strong><small className="mt-1 block text-xs text-slate-400">{item.sub}</small></span><span className="text-slate-300 group-hover:text-amber-600">→</span></button>:
+            <Link key={item.n} href={item.href} className="group flex items-start gap-5 border-0 border-b border-slate-200 py-5 text-left no-underline"><span className="pt-1 text-xs font-black text-amber-600">{item.n}</span><span className="flex-1"><strong className="block text-sm text-[#0f2347]">{item.title}</strong><small className="mt-1 block text-xs text-slate-400">{item.sub}</small></span><span className="text-slate-300 group-hover:text-amber-600">→</span></Link>
+          )}
+        </section>
+
+        <section className="editorial-body space-y-12 bg-white px-7 py-10 md:px-10">
+          <article className="border-0 bg-transparent">
+            <div className="flex items-start justify-between"><div><span className="text-[10px] font-black tracking-[.14em] text-slate-400">ACTIVITÉ RÉCENTE</span><h2 className="mt-2 text-xl font-black text-[#0f2347]">Ce qui s’est passé</h2></div><Link href="/participant/notifications" className="text-xs font-bold text-[#1b3a6b] no-underline">Tout voir →</Link></div>
+            <div className="mt-8 space-y-1">
+              {notifList.map((notification,index)=><button key={notification.id} onClick={()=>openNotification(notification)} className="group grid w-full grid-cols-[18px_1fr_auto] gap-4 border-0 border-b border-slate-100 bg-transparent py-5 text-left last:border-0 hover:bg-slate-50">
+                <span className={`mt-1 h-2.5 w-2.5 rounded-full ${index===0?'bg-blue-500':index===1?'bg-amber-500':'bg-emerald-500'}`}/><span><small className="text-[10px] text-slate-400">{notification.time}</small><strong className="mt-1 block text-sm text-[#0f2347]">{notification.title}</strong><span className="mt-1 block text-xs text-slate-500">{notification.text}</span></span><span className="self-center text-slate-300 group-hover:text-[#0f2347]">→</span>
+              </button>)}
+            </div>
+          </article>
+
+          <div className="space-y-12 border-t border-slate-200 pt-10">
+            <article className="bg-transparent">
+              <div><span className="text-[10px] font-black tracking-[.14em] text-slate-400">PROGRESSION</span><h2 className="mt-2 text-lg font-black text-[#0f2347]">Anglais B2 · 68%</h2><button onClick={()=>showProgress()} className="mt-2 border-0 bg-transparent p-0 text-xs font-bold text-amber-700">Voir le détail →</button></div>
+              <div className="mt-7 space-y-5">{PROGRESS.slice(0,3).map(item=><button key={item.label} onClick={()=>showProgress(item)} className="block w-full border-0 bg-transparent p-0 text-left"><span className="flex justify-between text-xs font-bold text-slate-600"><span>{item.label}</span><span>{item.pct}%</span></span><span className="mt-2 block h-1 bg-slate-200"><i className="block h-full bg-[#1b4d85]" style={{width:`${item.pct}%`}}/></span></button>)}</div>
+            </article>
+            <article className="border-t border-slate-200 pt-10"><span className="text-[10px] font-black tracking-[.14em] text-slate-400">CETTE SEMAINE</span><div className="mt-5 space-y-0">{SEANCES.map((s,i)=><button key={s.date} onClick={showCourse} className="flex w-full items-center justify-between border-0 border-b border-slate-100 bg-transparent py-4 text-left text-xs text-slate-600"><span>{s.jour} {s.date} janvier</span><strong className={i===3?'text-amber-700':'text-slate-400'}>{i===3?'Prochaine séance':s.status}</strong></button>)}</div></article>
+          </div>
+        </section>
+      </div>}
+
+      {false && <div className="part-new-dashboard">
+        <section className="part-new-hero">
+          <div className="part-new-greeting">
+            <div className="page-breadcrumb"><span>EDUOS</span><span>›</span><span>Mon espace</span></div>
+            <span className="part-new-overline">Lundi 27 janvier</span>
+            <h1>Prête pour votre<br /><em>prochain cours ?</em></h1>
+            <p>Bonjour Yasmine, votre parcours Anglais B2 avance très bien.</p>
+            <button onClick={showCourse}>Voir la séance <span>→</span></button>
+          </div>
+          <button className="part-new-course" onClick={showCourse}>
+            <span className="part-new-course-top"><i>PROCHAINE SÉANCE</i><em>Dans 2 jours</em></span>
+            <span className="part-new-course-time">10:00</span>
+            <strong>Present perfect<br />& conversation</strong>
+            <span className="part-new-course-meta">Salle 1 <i /> M. Karimi <i /> 2 heures</span>
+            <span className="part-new-course-arrow">↗</span>
+          </button>
+          <button className="part-new-score" onClick={() => showProgress()}>
+            <span className="part-new-score-ring"><strong>68</strong><small>%</small></span>
+            <span><small>PROGRESSION GLOBALE</small><strong>Anglais B2</strong><em>+8% ce mois</em></span>
+          </button>
+        </section>
+
+        <nav className="part-new-shortcuts" aria-label="Accès rapides">
+          <Link href="/participant/ressources"><span>01</span><strong>Continuer à apprendre</strong><small>9 ressources disponibles</small><i>→</i></Link>
+          <button onClick={() => setDetail({
+            eyebrow: 'Assiduité', title: 'Ma présence', description: 'Votre assiduité depuis le début de la formation.',
+            icon: 'calendar', facts: [{ label: 'Taux actuel', value: '87%' }, { label: 'Présences', value: '24 séances' }, { label: 'Absences', value: '2 justifiées' }, { label: 'Évolution', value: '+5% ce mois' }],
+          })}><span>02</span><strong>Voir ma présence</strong><small>87% de participation</small><i>→</i></button>
+          <Link href="/participant/paiement"><span>03</span><strong>Gérer mes paiements</strong><small>450 DH · 1er février</small><i>→</i></Link>
+          <Link href="/participant/documents"><span>04</span><strong>Mes documents</strong><small>3 nouveaux fichiers</small><i>→</i></Link>
+        </nav>
+
+        <section className="part-new-content">
+          <div className="part-new-timeline">
+            <div className="part-new-section-head">
+              <div><span>ACTIVITÉ RÉCENTE</span><h2>Ce qui s’est passé</h2></div>
+              <span className="part-new-unread">{notifList.filter((n) => !n.read).length} nouveau</span>
+            </div>
+            <div className="part-new-feed">
+              {notifList.map((notification, index) => (
+                <button key={notification.id} onClick={() => openNotification(notification)}>
+                  <span className={`part-new-feed-dot ${notification.tone}`} />
+                  <span className="part-new-feed-line" />
+                  <span className="part-new-feed-copy"><small>{notification.time}</small><strong>{notification.title}</strong><p>{notification.text}</p></span>
+                  <span className="part-new-feed-arrow">→</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="part-new-week">
+            <div className="part-new-section-head">
+              <div><span>MON RYTHME</span><h2>Cette semaine</h2></div>
+              <button onClick={() => showProgress()}>Voir le bilan</button>
+            </div>
+            <div className="part-new-week-days">
+              {SEANCES.map((session, index) => (
+                <button key={session.date} className={index === 3 ? 'active' : ''} onClick={() => setDetail({
+                  eyebrow: session.done ? 'Séance terminée' : 'Séance à venir',
+                  title: `${session.jour} ${session.date} janvier · ${session.time}`,
+                  description: session.done ? 'Votre présence à cette séance a bien été enregistrée.' : 'Cette séance est planifiée dans votre calendrier.',
+                  icon: 'calendar',
+                  facts: [{ label: 'Statut', value: session.status }, { label: 'Horaire', value: session.time }, { label: 'Salle', value: 'Salle 1' }, { label: 'Formateur', value: 'M. Karimi' }],
+                })}>
+                  <small>{session.jour}</small><strong>{session.date}</strong><i className={session.done ? 'done' : ''} />
+                </button>
+              ))}
+            </div>
+            <div className="part-new-skills">
+              {PROGRESS.slice(0, 3).map((item) => (
+                <button key={item.label} onClick={() => showProgress(item)}>
+                  <span><strong>{item.label}</strong><em>{item.pct}%</em></span>
+                  <i><span style={{ width: `${item.pct}%` }} /></i>
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <footer className="part-new-footer">
+          <span>DERNIERS DOCUMENTS</span>
+          {DOCS.slice(0, 2).map((document) => (
+            <button key={document.name} onClick={() => openDocument(document)}>
+              <span className="part-new-file-icon">PDF</span>
+              <span><strong>{document.name}</strong><small>{document.date} · {document.size}</small></span>
+              <i>↗</i>
+            </button>
+          ))}
+          <Link href="/participant/documents">Tout voir →</Link>
+        </footer>
+      </div>}
     </div>
   )
 }

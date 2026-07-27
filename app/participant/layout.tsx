@@ -55,11 +55,32 @@ const navItems = [
       </svg>
     ),
   },
+  {
+    label: 'Notifications',
+    href: '/participant/notifications',
+    badge: '2',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+      </svg>
+    ),
+  },
+  {
+    label: 'Mon compte',
+    href: '/participant/compte',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" />
+      </svg>
+    ),
+  },
 ]
 
 export default function ParticipantLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [showNotifs, setShowNotifs] = useState(false)
 
   useEffect(() => setMenuOpen(false), [pathname])
@@ -67,22 +88,21 @@ export default function ParticipantLayout({ children }: { children: ReactNode })
   const isActive = (item: typeof navItems[0]) => pathname.startsWith(item.href)
 
   return (
-    <div className="part-shell">
+    <div className={`part-shell${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
       {menuOpen && (
         <button className="dir-overlay" aria-label="Fermer" onClick={() => setMenuOpen(false)} />
       )}
 
       {/* ── Sidebar ── */}
       <aside className={`part-sidebar${menuOpen ? ' is-open' : ''}`}>
+        <button className="part-sidebar-toggle" onClick={() => setSidebarCollapsed(!sidebarCollapsed)} aria-label={sidebarCollapsed ? 'Ouvrir le menu' : 'Réduire le menu'}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d={sidebarCollapsed ? 'm9 18 6-6-6-6' : 'm15 18-6-6 6-6'}/></svg>
+        </button>
         <div className="part-brand" style={{ padding: '16px 20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
             <Link href="/participant/mon-espace" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-              <Image src="/images/logo.png" alt="EDUOS MAROC" width={180} height={64} style={{ height: 64, width: 'auto', objectFit: 'contain', display: 'block' }} priority />
+              <Image className="sidebar-logo" src="/images/logo.png" alt="EDUOS MAROC" width={180} height={64} priority />
             </Link>
-            <span className="part-role-pill">
-              <span className="part-role-dot" />
-              ÉLÈVE
-            </span>
           </div>
         </div>
 
@@ -96,13 +116,13 @@ export default function ParticipantLayout({ children }: { children: ReactNode })
             >
               <span className="part-nav-icon">{item.icon}</span>
               {item.label}
+              {'badge' in item && item.badge && <span className="part-nav-badge">{item.badge}</span>}
             </Link>
           ))}
         </nav>
 
         <div className="part-sidebar-footer">
           <div className="part-user-card" style={{ marginBottom: 10 }}>
-            <div className="part-user-avatar">YB</div>
             <div className="part-user-info">
               <strong>Yasmine Bennani</strong>
               <span>Élève · Anglais B2</span>
@@ -115,6 +135,9 @@ export default function ParticipantLayout({ children }: { children: ReactNode })
       {/* ── Main Content ── */}
       <div className="part-content">
         <header className="part-topbar">
+          <button className="part-mobile-menu" onClick={() => setMenuOpen(true)} aria-label="Ouvrir le menu">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
           <div style={{ position: 'relative', width: 300 }}>
             <svg
               width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.2" strokeLinecap="round"

@@ -80,6 +80,7 @@ const navItems = [
 export default function DirecteurLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [showNotifs, setShowNotifs] = useState(false)
   const [unreadNotifs, setUnreadNotifs] = useState(4)
   const [searchQuery, setSearchQuery] = useState('')
@@ -92,7 +93,7 @@ export default function DirecteurLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="dir-shell">
+    <div className={`dir-shell${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
       {menuOpen && (
         <div
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 90 }}
@@ -102,12 +103,14 @@ export default function DirecteurLayout({ children }: { children: ReactNode }) {
 
       {/* ── Sidebar ── */}
       <aside className={`dir-sidebar${menuOpen ? ' is-open' : ''}`}>
+        <button className="universal-sidebar-toggle" onClick={() => setSidebarCollapsed(!sidebarCollapsed)} aria-label={sidebarCollapsed ? 'Ouvrir le menu' : 'Réduire le menu'}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d={sidebarCollapsed ? 'm9 18 6-6-6-6' : 'm15 18-6-6 6-6'}/></svg>
+        </button>
         {/* Brand */}
         <div className="dir-brand">
           <Link href="/directeur" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-            <Image src="/images/logo.png" alt="EDUOS MAROC" width={180} height={64} style={{ height: 64, width: 'auto', objectFit: 'contain', display: 'block' }} priority />
+            <Image className="sidebar-logo" src="/images/logo.png" alt="EDUOS MAROC" width={180} height={64} priority />
           </Link>
-          <span className="dir-brand-role" style={{ marginLeft: 'auto' }}>Direction</span>
         </div>
 
         {/* Nav */}
@@ -130,7 +133,6 @@ export default function DirecteurLayout({ children }: { children: ReactNode }) {
 
         {/* Footer User */}
         <div className="dir-sidebar-footer">
-          <div className="dir-user-avatar">AB</div>
           <div className="dir-user-info">
             <strong>Ahmed Bennani</strong>
             <span>Directeur Général</span>

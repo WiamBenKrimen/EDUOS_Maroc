@@ -2,6 +2,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useState } from 'react'
 import LogoutButton from '../logout-button'
 
 const NAV = [
@@ -25,15 +26,18 @@ const NAV = [
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   return (
-    <div className="dir-shell">
+    <div className={`dir-shell${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
       <aside className="dir-sidebar">
+        <button className="universal-sidebar-toggle" onClick={() => setSidebarCollapsed(!sidebarCollapsed)} aria-label={sidebarCollapsed ? 'Ouvrir le menu' : 'Réduire le menu'}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d={sidebarCollapsed ? 'm9 18 6-6-6-6' : 'm15 18-6-6 6-6'}/></svg>
+        </button>
         <div className="dir-brand">
           <Link href="/admin/utilisateurs" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-            <Image src="/images/logo.png" alt="EDUOS MAROC" width={180} height={64} style={{ height: 64, width: 'auto', objectFit: 'contain', display: 'block' }} priority />
+            <Image className="sidebar-logo" src="/images/logo.png" alt="EDUOS MAROC" width={180} height={64} priority />
           </Link>
-          <span className="dir-brand-role" style={{ marginLeft: 'auto', background: 'rgba(220,38,38,.08)', color: '#DC2626', padding: '3px 8px', borderRadius: 6 }}>Admin</span>
         </div>
 
         <nav className="dir-nav">
@@ -58,7 +62,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </nav>
 
         <div className="dir-sidebar-footer">
-          <div className="dir-user-avatar" style={{ background: 'linear-gradient(135deg,#DC2626,#b91c1c)' }}>SU</div>
           <div className="dir-user-info">
             <strong>Super Admin</strong>
             <span>Accès complet</span>

@@ -11,6 +11,7 @@ export interface User {
 
 const STORAGE_KEY = 'eduos_user'
 const ACCOUNTS_KEY = 'eduos_accounts'
+const PASSWORDS_KEY = 'eduos_password_overrides'
 
 export interface Account {
   id: string
@@ -69,7 +70,8 @@ function getAccounts(): Account[] {
 
 export function login(email: string, password: string): User {
   const normalizedEmail = email.trim().toLowerCase()
-  const account = getAccounts().find(item => item.email.toLowerCase() === normalizedEmail && item.password === password)
+  const overrides = typeof window === 'undefined' ? {} : JSON.parse(localStorage.getItem(PASSWORDS_KEY) ?? '{}') as Record<string, string>
+  const account = getAccounts().find(item => item.email.toLowerCase() === normalizedEmail && (overrides[normalizedEmail] ?? item.password) === password)
   if (!account) throw new Error('Adresse e-mail ou mot de passe incorrect.')
 
   const user: User = {
@@ -82,6 +84,18 @@ export function login(email: string, password: string): User {
   }
   setUser(user)
   return user
+}
+
+export function changePassword(currentPassword: string, newPassword: string): void {
+  const user = getUser()
+  if (!user) throw new Error('Session introuvable.')
+  const email = user.email.toLowerCase()
+  const overrides = JSON.parse(localStorage.getItem(PASSWORDS_KEY) ?? '{}') as Record<string, string>
+  const account = getAccounts().find(item => item.email.toLowerCase() === email)
+  if (!account || (overrides[email] ?? account.password) !== currentPassword) {
+    throw new Error('Le mot de passe actuel est incorrect.')
+  }
+  localStorage.setItem(PASSWORDS_KEY, JSON.stringify({ ...overrides, [email]: newPassword }))
 }
 
 export function register(input: Omit<Account, 'id' | 'centreId'>): User {

@@ -2,7 +2,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ReactNode, useEffect, useState } from 'react'
+import { ReactNode, useState } from 'react'
 import LogoutButton from '../logout-button'
 
 const navItems = [
@@ -79,13 +79,9 @@ const navItems = [
 
 export default function DirecteurLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
-  const [menuOpen, setMenuOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [showNotifs, setShowNotifs] = useState(false)
   const [unreadNotifs, setUnreadNotifs] = useState(4)
-  const [searchQuery, setSearchQuery] = useState('')
-
-  useEffect(() => setMenuOpen(false), [pathname])
 
   function isActive(item: typeof navItems[0]) {
     if (item.exact) return pathname === item.href
@@ -94,15 +90,8 @@ export default function DirecteurLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className={`dir-shell${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
-      {menuOpen && (
-        <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 90 }}
-          onClick={() => setMenuOpen(false)}
-        />
-      )}
-
       {/* ── Sidebar ── */}
-      <aside className={`dir-sidebar${menuOpen ? ' is-open' : ''}`}>
+      <aside className="dir-sidebar">
         <button className="universal-sidebar-toggle" onClick={() => setSidebarCollapsed(!sidebarCollapsed)} aria-label={sidebarCollapsed ? 'Ouvrir le menu' : 'Réduire le menu'}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d={sidebarCollapsed ? 'm9 18 6-6-6-6' : 'm15 18-6-6 6-6'}/></svg>
         </button>
@@ -148,32 +137,6 @@ export default function DirecteurLayout({ children }: { children: ReactNode }) {
       <div className="dir-content">
         {/* Topbar */}
         <header className="dir-topbar">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0F2347" strokeWidth="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
-            </button>
-
-            {/* Universal Search Bar */}
-            <div className="dir-search-wrap">
-              <svg
-                width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.2" strokeLinecap="round"
-                style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }}
-              >
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              </svg>
-              <input
-                type="text"
-                className="dir-search-input"
-                placeholder="Rechercher (élèves, formateurs, cohortes...)"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-              />
-            </div>
-          </div>
-
           {/* Topbar Right */}
           <div className="dir-topbar-right">
             {/* Notification Bell */}

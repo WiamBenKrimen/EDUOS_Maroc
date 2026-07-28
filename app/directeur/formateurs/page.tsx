@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import SearchFilterBar from '../search-filter-bar'
 
 const NAVY = '#0F2347'
 const BLUE = '#1B3A6B'
@@ -30,6 +31,7 @@ function Stars({ n }: { n: number }) {
 export default function FormateursPage() {
   const [formateurs, setFormateurs] = useState(INITIAL_FORMATEURS)
   const [toast, setToast] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
   
   // Modals
   const [showAddModal, setShowAddModal] = useState(false)
@@ -39,6 +41,11 @@ export default function FormateursPage() {
   const [newNom, setNewNom] = useState('')
   const [newSpec, setNewSpec] = useState('')
   const [newTaux, setNewTaux] = useState(120)
+
+  const filtered = formateurs.filter(f => 
+    f.nom.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    f.specialite.toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
   const triggerToast = (msg: string) => {
     setToast(msg)
@@ -91,12 +98,13 @@ export default function FormateursPage() {
       )}
 
       {/* Header */}
-      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 900, fontSize: 24, color: NAVY, marginBottom: 4 }}>Équipe Pédagogique</h1>
-          <p style={{ fontSize: 13.5, color: '#64748b' }}>Gérez les formateurs, leur charge horaire et leurs évaluations.</p>
-        </div>
-        <div style={{ display: 'flex', gap: 10 }}>
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
+          <div>
+            <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 900, fontSize: 24, color: NAVY, marginBottom: 4 }}>Équipe Pédagogique</h1>
+            <p style={{ fontSize: 13.5, color: '#64748b' }}>Gérez les formateurs, leur charge horaire et leurs évaluations.</p>
+          </div>
+          <div style={{ display: 'flex', gap: 10 }}>
           <button
             onClick={() => triggerToast('Dossiers de rémunération téléchargés !')}
             style={{
@@ -134,12 +142,20 @@ export default function FormateursPage() {
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Ajouter un formateur
           </button>
+          </div>
         </div>
+        <SearchFilterBar value={searchQuery} onChange={setSearchQuery} placeholder="Rechercher un formateur ou une spécialité..." resultCount={filtered.length} />
       </div>
 
       {/* Grid of Trainers */}
+      {filtered.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '40px 20px', color: '#64748b' }}>
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ margin: '0 auto 12px', opacity: 0.5 }}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <p style={{ fontSize: 14, margin: '8px 0' }}>Aucun formateur trouvé</p>
+        </div>
+      ) : (
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
-        {formateurs.map((f) => (
+        {filtered.map((f) => (
           <div
             key={f.id}
             style={{
@@ -195,6 +211,7 @@ export default function FormateursPage() {
           </div>
         ))}
       </div>
+      )}
 
       {/* Add Trainer Modal */}
       {showAddModal && (

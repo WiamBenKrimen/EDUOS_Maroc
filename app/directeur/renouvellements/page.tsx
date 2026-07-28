@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import SearchFilterBar from '../search-filter-bar'
 
 const NAVY = '#0F2347'
 const BLUE = '#1B3A6B'
@@ -35,6 +36,7 @@ const ACTION_MAP: Record<string, { color: string; bg: string }> = {
 export default function RenouvellemmentsPage() {
   const [renouvellements, setRenouvellements] = useState(INITIAL_RENOUVELLEMENTS)
   const [toast, setToast] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
   const [selectedRenewal, setSelectedRenewal] = useState<(typeof INITIAL_RENOUVELLEMENTS)[number] | null>(null)
   const [duration, setDuration] = useState('6')
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10))
@@ -67,9 +69,14 @@ export default function RenouvellemmentsPage() {
     triggerToast('Relances envoyées à tous les apprenants dont le contrat expire sous 30j !')
   }
 
-  const urgentCount = renouvellements.filter(r => r.jours <= 7).length
-  const toTreatCount = renouvellements.filter(r => r.jours <= 30).length
-  const renewedCount = renouvellements.filter(r => r.action === 'Renouvelé').length
+  const filtered = renouvellements.filter(r =>
+    r.nom.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    r.formation.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const urgentCount = filtered.filter(r => r.jours <= 7).length
+  const toTreatCount = filtered.filter(r => r.jours <= 30).length
+  const renewedCount = filtered.filter(r => r.action === 'Renouvelé').length
 
   return (
     <div>
@@ -97,7 +104,8 @@ export default function RenouvellemmentsPage() {
       )}
 
       {/* Header */}
-      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div style={{ marginBottom: 24 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
         <div>
           <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 900, fontSize: 24, color: NAVY, marginBottom: 4 }}>Gestion des Renouvellements</h1>
           <p style={{ fontSize: 13.5, color: '#64748b' }}>Suivez les fins de cycles et anticipez les réinscriptions d'apprenants.</p>
@@ -122,7 +130,9 @@ export default function RenouvellemmentsPage() {
         >
           Envoyer toutes les relances
         </button>
+        </div>
       </div>
+      <SearchFilterBar value={searchQuery} onChange={setSearchQuery} placeholder="Rechercher un apprenant ou une formation..." resultCount={filtered.length} />
 
       {/* KPI Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 28 }}>
@@ -140,6 +150,12 @@ export default function RenouvellemmentsPage() {
       </div>
 
       {/* Table */}
+      {filtered.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '40px 20px', color: '#64748b', background: '#fff', borderRadius: 14, border: '1px solid #E2E8F0' }}>
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ margin: '0 auto 12px', opacity: 0.5 }}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <p style={{ fontSize: 14, margin: '8px 0' }}>Aucun renouvellement trouvé</p>
+        </div>
+      ) : (
       <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 2px 8px rgba(15,35,71,0.04)' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
@@ -150,7 +166,7 @@ export default function RenouvellemmentsPage() {
             </tr>
           </thead>
           <tbody>
-            {renouvellements.map((r, i) => {
+            {filtered.map((r, i) => {
               const jc = joursColor(r.jours)
               const ac = ACTION_MAP[r.action] ?? { color: '#64748b', bg: '#F1F5F9' }
               return (
@@ -200,6 +216,7 @@ export default function RenouvellemmentsPage() {
           </tbody>
         </table>
       </div>
+      )}
 
       {selectedRenewal && (
         <div className="renew-modal-backdrop" role="presentation" onMouseDown={() => setSelectedRenewal(null)}>

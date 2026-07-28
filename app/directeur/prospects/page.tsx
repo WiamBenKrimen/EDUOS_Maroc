@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import SearchFilterBar from '../search-filter-bar'
 
 const NAVY = '#0F2347'
 const BLUE = '#1B3A6B'
@@ -123,57 +124,13 @@ export default function ProspectsPage() {
         </button>
       </div>
 
-      {/* Filters and Search Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
-        {/* Status Filters */}
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {['Tous', 'Nouveau', 'En cours', 'Inscrit', 'Perdu'].map(status => (
-            <button
-              key={status}
-              onClick={() => setSelectedStatus(status)}
-              style={{
-                padding: '8px 16px',
-                borderRadius: 99,
-                border: selectedStatus === status ? 'none' : '1px solid #E2E8F0',
-                background: selectedStatus === status ? NAVY : '#fff',
-                color: selectedStatus === status ? '#fff' : '#64748b',
-                fontFamily: "'Plus Jakarta Sans', sans-serif",
-                fontWeight: selectedStatus === status ? 700 : 600,
-                fontSize: '0.82rem',
-                cursor: 'pointer',
-                transition: 'all 0.15s'
-              }}
-            >
-              {status}
-            </button>
-          ))}
-        </div>
-
-        {/* Search Bar */}
-        <div style={{ position: 'relative', width: 280 }}>
-          <svg
-            width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round"
-            style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }}
-          >
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <input
-            type="text"
-            placeholder="Rechercher par nom ou formation..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '8px 12px 8px 36px',
-              borderRadius: 9,
-              border: '1px solid #CBD5E1',
-              fontSize: '0.82rem',
-              outline: 'none',
-              background: '#fff'
-            }}
-          />
-        </div>
-      </div>
+      <SearchFilterBar
+        value={searchQuery}
+        onChange={setSearchQuery}
+        placeholder="Rechercher par nom ou formation..."
+        resultCount={filtered.length}
+        filters={[{ label: 'Statut', value: selectedStatus, options: ['Tous', 'Nouveau', 'En cours', 'Inscrit', 'Perdu'], onChange: setSelectedStatus }]}
+      />
 
       {/* Prospects Table */}
       <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 2px 8px rgba(15,35,71,0.04)' }}>

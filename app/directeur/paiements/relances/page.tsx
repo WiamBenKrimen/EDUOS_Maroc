@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import SearchFilterBar from '../../search-filter-bar'
 
 interface Rule {
   id: string
@@ -20,6 +21,15 @@ const INITIAL_RULES: Rule[] = [
 
 export default function RelancesPage() {
   const [rules, setRules] = useState<Rule[]>(INITIAL_RULES)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [activeFilter, setActiveFilter] = useState('Toutes')
+
+  const filteredRules = rules.filter(rule => {
+    const query = searchQuery.trim().toLocaleLowerCase('fr-FR')
+    const matchesQuery = !query || [rule.titre, rule.declencheur, rule.canal, rule.message].some(value => value.toLocaleLowerCase('fr-FR').includes(query))
+    const matchesStatus = activeFilter === 'Toutes' || (activeFilter === 'Actives' ? rule.actif : !rule.actif)
+    return matchesQuery && matchesStatus
+  })
 
   function toggle(id: string) {
     setRules(prev => prev.map(r => r.id === id ? { ...r, actif: !r.actif } : r))
@@ -55,8 +65,17 @@ export default function RelancesPage() {
         ))}
       </div>
 
+      <SearchFilterBar
+        value={searchQuery}
+        onChange={setSearchQuery}
+        placeholder="Rechercher une règle, un canal ou un déclencheur..."
+        resultCount={filteredRules.length}
+        filters={[{ label: 'État', value: activeFilter, options: ['Toutes', 'Actives', 'Inactives'], onChange: setActiveFilter }]}
+      />
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {rules.map(rule => (
+        {filteredRules.length === 0 && <div style={{ padding: '32px 20px', textAlign: 'center', color: '#64748b', background: '#fff', border: '1px solid #E2D9CC', borderRadius: 12, fontSize: '.85rem' }}>Aucune règle ne correspond a votre recherche.</div>}
+        {filteredRules.map(rule => (
           <div key={rule.id} style={{ background: '#fff', borderRadius: 16, padding: '24px', border: `1.5px solid ${rule.actif ? 'rgba(27,58,107,.15)' : '#E2D9CC'}`, boxShadow: '0 2px 12px rgba(27,58,107,.04)', opacity: rule.actif ? 1 : 0.65, transition: 'opacity .2s' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
               <div style={{ flex: 1 }}>

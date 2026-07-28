@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import SearchFilterBar from '../search-filter-bar'
 
 const NAVY = '#0F2347'
 const BLUE = '#1B3A6B'
@@ -138,17 +139,12 @@ export default function PaiementsPage() {
         ))}
       </div>
 
+      <SearchFilterBar value={searchQuery} onChange={setSearchQuery} placeholder="Rechercher un apprenant ou une formation..." resultCount={filtered.length} />
+
       {/* Payments Table */}
       <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 2px 8px rgba(15,35,71,0.04)' }}>
         <div style={{ padding: '18px 24px', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FAFAFA' }}>
           <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, fontSize: 15, color: NAVY, margin: 0 }}>Règlements récents</h2>
-          <input
-            type="text"
-            placeholder="Rechercher..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            style={{ padding: '7px 12px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: '0.82rem', width: 220, outline: 'none' }}
-          />
         </div>
 
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>

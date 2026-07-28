@@ -18,6 +18,7 @@ const REPORTS = [
 
 export default function RapportsPage() {
   const [toast, setToast] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
   const [selectedMonth, setSelectedMonth] = useState('Juillet 2025')
   
   // Modals
@@ -28,6 +29,11 @@ export default function RapportsPage() {
     setToast(msg)
     setTimeout(() => setToast(null), 3000)
   }
+
+  const filtered = REPORTS.filter(r =>
+    r.titre.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    r.desc.toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
   const handleDownloadReport = (r: typeof REPORTS[0]) => {
     if (r.type === 'custom') {
@@ -92,10 +98,17 @@ export default function RapportsPage() {
 
       {/* Bar Action */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 28, alignItems: 'center' }}>
+        <input
+          type="text"
+          placeholder="Rechercher un rapport..."
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          style={{ flex: 1, padding: '9px 16px', borderRadius: 9, border: '1px solid #CBD5E1', fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 500, fontSize: '0.84rem', color: NAVY, background: '#fff', outline: 'none' }}
+        />
         <select
           value={selectedMonth}
           onChange={e => setSelectedMonth(e.target.value)}
-          style={{ padding: '9px 16px', borderRadius: 9, border: '1px solid #CBD5E1', fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: '0.84rem', color: NAVY, background: '#fff', outline: 'none' }}
+          style={{ padding: '9px 16px', borderRadius: 9, border: '1px solid #CBD5E1', fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: '0.84rem', color: NAVY, background: '#fff', outline: 'none', whiteSpace: 'nowrap' }}
         >
           <option>Juillet 2025</option>
           <option>Juin 2025</option>
@@ -112,8 +125,14 @@ export default function RapportsPage() {
       </div>
 
       {/* Grid of Reports */}
+      {filtered.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '40px 20px', color: '#64748b' }}>
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ margin: '0 auto 12px', opacity: 0.5 }}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <p style={{ fontSize: 14, margin: '8px 0' }}>Aucun rapport trouvé</p>
+        </div>
+      ) : (
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20 }}>
-        {REPORTS.map((r) => (
+        {filtered.map((r) => (
           <div
             key={r.id}
             style={{
@@ -166,6 +185,7 @@ export default function RapportsPage() {
           </div>
         ))}
       </div>
+      )}
 
       {/* Schedule Auto Report Modal */}
       {showScheduleModal && (

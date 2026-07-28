@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import SearchFilterBar from '../search-filter-bar'
 
 const NAVY = '#0F2347'
 const BLUE = '#1B3A6B'
@@ -24,6 +25,7 @@ function fillColor(pct: number) {
 export default function CohortesPage() {
   const [cohortes, setCohortes] = useState(INITIAL_COHORTES)
   const [toast, setToast] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
   
   // Modals
   const [showAddModal, setShowAddModal] = useState(false)
@@ -66,9 +68,14 @@ export default function CohortesPage() {
     triggerToast(`Cohorte "${editCohorte.name}" mise à jour !`)
   }
 
-  const totalEleves = cohortes.reduce((sum, c) => sum + c.eleves, 0)
-  const totalPlaces = cohortes.reduce((sum, c) => sum + (c.max - c.eleves), 0)
-  const totalComplets = cohortes.filter(c => c.eleves >= c.max).length
+  const filtered = cohortes.filter(c => 
+    c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    c.formateur.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+  
+  const totalEleves = filtered.reduce((sum, c) => sum + c.eleves, 0)
+  const totalPlaces = filtered.reduce((sum, c) => sum + (c.max - c.eleves), 0)
+  const totalComplets = filtered.filter(c => c.eleves >= c.max).length
 
   return (
     <div>
@@ -96,38 +103,41 @@ export default function CohortesPage() {
       )}
 
       {/* Header */}
-      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 900, fontSize: 24, color: NAVY, marginBottom: 4 }}>Cohortes & Groupes</h1>
-          <p style={{ fontSize: 13.5, color: '#64748b' }}>Gérez la planification des groupes de formation et suivez les taux de remplissage.</p>
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
+          <div>
+            <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 900, fontSize: 24, color: NAVY, marginBottom: 4 }}>Cohortes & Groupes</h1>
+            <p style={{ fontSize: 13.5, color: '#64748b' }}>Gérez la planification des groupes de formation et suivez les taux de remplissage.</p>
+          </div>
+          <button
+            onClick={() => setShowAddModal(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '10px 18px',
+              borderRadius: 9,
+              border: 'none',
+              background: BLUE,
+              color: '#fff',
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
+              fontWeight: 800,
+              fontSize: '0.82rem',
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(27,58,107,0.2)'
+            }}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nouvelle cohorte
+          </button>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '10px 18px',
-            borderRadius: 9,
-            border: 'none',
-            background: BLUE,
-            color: '#fff',
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
-            fontWeight: 800,
-            fontSize: '0.82rem',
-            cursor: 'pointer',
-            boxShadow: '0 4px 12px rgba(27,58,107,0.2)'
-          }}
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Nouvelle cohorte
-        </button>
+        <SearchFilterBar value={searchQuery} onChange={setSearchQuery} placeholder="Rechercher un groupe ou un formateur..." resultCount={filtered.length} />
       </div>
 
       {/* KPI Summary Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 28 }}>
         {[
-          { label: 'Groupes actifs', val: cohortes.length, color: NAVY, bg: '#F1F5F9' },
+          { label: 'Groupes actifs', val: filtered.length, color: NAVY, bg: '#F1F5F9' },
           { label: 'Total apprenants', val: totalEleves, color: BLUE, bg: '#EEF2FF' },
           { label: 'Places disponibles', val: totalPlaces, color: GOLD, bg: '#FEF3C7' },
           { label: 'Groupes complets', val: totalComplets, color: '#059669', bg: '#ECFDF5' }
@@ -140,8 +150,14 @@ export default function CohortesPage() {
       </div>
 
       {/* Cohorts Grid */}
+      {filtered.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '40px 20px', color: '#64748b' }}>
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ margin: '0 auto 12px', opacity: 0.5 }}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <p style={{ fontSize: 14, margin: '8px 0' }}>Aucune cohorte trouvée</p>
+        </div>
+      ) : (
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
-        {cohortes.map((c) => {
+        {filtered.map((c) => {
           const pct = Math.round((c.eleves / c.max) * 100)
           const col = fillColor(pct)
           return (
@@ -206,6 +222,7 @@ export default function CohortesPage() {
           )
         })}
       </div>
+      )}
 
       {/* Add Cohort Modal */}
       {showAddModal && (

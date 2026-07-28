@@ -1,4 +1,6 @@
 'use client'
+import { useMemo, useState } from 'react'
+import SearchFilterBar from '../../search-filter-bar'
 
 const FACTURES = [
   { num: 'FAC-2025-0142', apprenant: 'Ahmed Cherkaoui', formation: 'Anglais B1', montant: '450 DH', date: '22 juil. 2025', statut: 'Payée' },
@@ -18,6 +20,19 @@ const STATUS_MAP: Record<string, { color: string; bg: string }> = {
 }
 
 export default function FacturesPage() {
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedStatus, setSelectedStatus] = useState('Toutes')
+  const [selectedMonth, setSelectedMonth] = useState('Toutes les periodes')
+  const filteredFactures = useMemo(() => {
+    const query = searchQuery.trim().toLocaleLowerCase('fr-FR')
+    return FACTURES.filter(facture => {
+      const matchesQuery = !query || [facture.num, facture.apprenant, facture.formation, facture.montant].some(value => value.toLocaleLowerCase('fr-FR').includes(query))
+      const matchesStatus = selectedStatus === 'Toutes' || facture.statut === selectedStatus
+      const matchesMonth = selectedMonth === 'Toutes les periodes' || facture.date.includes(selectedMonth)
+      return matchesQuery && matchesStatus && matchesMonth
+    })
+  }, [searchQuery, selectedStatus, selectedMonth])
+
   return (
     <div style={{ padding: '36px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 }}>
@@ -34,22 +49,16 @@ export default function FacturesPage() {
         </button>
       </div>
 
-      {/* Filter tabs */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
-        {['Toutes', 'Payée', 'En attente', 'En retard'].map((s, i) => (
-          <button key={s} style={{ padding: '8px 18px', borderRadius: 8, border: `1.5px solid ${i === 0 ? '#1B3A6B' : '#E2D9CC'}`, background: i === 0 ? '#1B3A6B' : '#fff', color: i === 0 ? '#fff' : '#64748b', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 600, fontSize: '.8rem', cursor: 'pointer' }}>
-            {s}
-          </button>
-        ))}
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
-          <input placeholder="Rechercher…" style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #E2D9CC', fontFamily: "'Inter', system-ui, sans-serif", fontSize: '.82rem', outline: 'none', width: 200 }} />
-          <select style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #E2D9CC', fontFamily: "'Inter', system-ui, sans-serif", fontSize: '.82rem', color: '#64748b', outline: 'none', cursor: 'pointer' }}>
-            <option>Juillet 2025</option>
-            <option>Juin 2025</option>
-            <option>Mai 2025</option>
-          </select>
-        </div>
-      </div>
+      <SearchFilterBar
+        value={searchQuery}
+        onChange={setSearchQuery}
+        placeholder="Rechercher par numéro, apprenant ou formation..."
+        resultCount={filteredFactures.length}
+        filters={[
+          { label: 'Statut', value: selectedStatus, options: ['Toutes', 'Payée', 'En attente', 'En retard'], onChange: setSelectedStatus },
+          { label: 'Période', value: selectedMonth, options: ['Toutes les periodes', 'juil. 2025', 'juin 2025', 'mai 2025'], onChange: setSelectedMonth },
+        ]}
+      />
 
       <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2D9CC', overflow: 'hidden', boxShadow: '0 2px 12px rgba(27,58,107,.04)' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -61,10 +70,11 @@ export default function FacturesPage() {
             </tr>
           </thead>
           <tbody>
-            {FACTURES.map((f, i) => {
+            {filteredFactures.length === 0 && <tr><td colSpan={7} style={{ padding: '32px 20px', textAlign: 'center', color: '#64748b', fontSize: '.85rem' }}>Aucune facture ne correspond a votre recherche.</td></tr>}
+            {filteredFactures.map((f, i) => {
               const { color, bg } = STATUS_MAP[f.statut] ?? { color: '#64748b', bg: '#f1f5f9' }
               return (
-                <tr key={i} style={{ borderBottom: i < FACTURES.length - 1 ? '1px solid #f1ede8' : 'none', transition: 'background .15s' }}
+                <tr key={f.num} style={{ borderBottom: i < filteredFactures.length - 1 ? '1px solid #f1ede8' : 'none', transition: 'background .15s' }}
                   onMouseEnter={e => (e.currentTarget.style.background = '#faf8f5')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                   <td style={{ padding: '13px 20px', fontFamily: "'Inter', system-ui, sans-serif", fontSize: '.82rem', color: '#1B3A6B', fontWeight: 600 }}>{f.num}</td>

@@ -1,4 +1,6 @@
 'use client'
+import { useMemo, useState } from 'react'
+import SearchFilterBar from '../../search-filter-bar'
 
 const REMUNERATIONS = [
   { formateur: 'Karim Alaoui', specialite: 'Anglais', heures: 48, tauxHoraire: 120, total: 5760, statut: 'Calculé' },
@@ -10,7 +12,17 @@ const REMUNERATIONS = [
 ]
 
 export default function RemunerationsPage() {
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedStatus, setSelectedStatus] = useState('Tous')
   const totalMois = REMUNERATIONS.reduce((s, r) => s + r.total, 0)
+  const filteredRemunerations = useMemo(() => {
+    const query = searchQuery.trim().toLocaleLowerCase('fr-FR')
+    return REMUNERATIONS.filter(remuneration => {
+      const matchesQuery = !query || [remuneration.formateur, remuneration.specialite].some(value => value.toLocaleLowerCase('fr-FR').includes(query))
+      return matchesQuery && (selectedStatus === 'Tous' || remuneration.statut === selectedStatus)
+    })
+  }, [searchQuery, selectedStatus])
+  const filteredTotal = filteredRemunerations.reduce((sum, remuneration) => sum + remuneration.total, 0)
 
   return (
     <div style={{ padding: '36px' }}>
@@ -49,6 +61,14 @@ export default function RemunerationsPage() {
         ))}
       </div>
 
+      <SearchFilterBar
+        value={searchQuery}
+        onChange={setSearchQuery}
+        placeholder="Rechercher un formateur ou une spécialité..."
+        resultCount={filteredRemunerations.length}
+        filters={[{ label: 'Statut', value: selectedStatus, options: ['Tous', 'Calculé', 'En attente', 'Payé'], onChange: setSelectedStatus }]}
+      />
+
       <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2D9CC', overflow: 'hidden', boxShadow: '0 2px 12px rgba(27,58,107,.04)' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
@@ -59,7 +79,8 @@ export default function RemunerationsPage() {
             </tr>
           </thead>
           <tbody>
-            {REMUNERATIONS.map((r, i) => {
+            {filteredRemunerations.length === 0 && <tr><td colSpan={7} style={{ padding: '32px 20px', textAlign: 'center', color: '#64748b', fontSize: '.85rem' }}>Aucune rémunération ne correspond a votre recherche.</td></tr>}
+            {filteredRemunerations.map((r, i) => {
               const sm: Record<string, { color: string; bg: string }> = {
                 'Payé': { color: '#059669', bg: 'rgba(5,150,105,.08)' },
                 'Calculé': { color: '#1B3A6B', bg: 'rgba(27,58,107,.07)' },
@@ -67,7 +88,7 @@ export default function RemunerationsPage() {
               }
               const { color, bg } = sm[r.statut] ?? { color: '#64748b', bg: '#f1f5f9' }
               return (
-                <tr key={i} style={{ borderBottom: i < REMUNERATIONS.length - 1 ? '1px solid #f1ede8' : 'none', transition: 'background .15s' }}
+                <tr key={r.formateur} style={{ borderBottom: i < filteredRemunerations.length - 1 ? '1px solid #f1ede8' : 'none', transition: 'background .15s' }}
                   onMouseEnter={e => (e.currentTarget.style.background = '#faf8f5')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                   <td style={{ padding: '14px 20px', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 700, fontSize: '.88rem', color: '#1a1823' }}>{r.formateur}</td>
@@ -91,7 +112,7 @@ export default function RemunerationsPage() {
           <tfoot>
             <tr style={{ background: '#faf8f5', borderTop: '2px solid #E2D9CC' }}>
               <td colSpan={4} style={{ padding: '14px 20px', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 800, fontSize: '.88rem', color: '#1a1823' }}>Total du mois</td>
-              <td style={{ padding: '14px 20px', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 900, fontSize: '1rem', color: '#1B3A6B' }}>{totalMois.toLocaleString('fr-MA')} DH</td>
+              <td style={{ padding: '14px 20px', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 900, fontSize: '1rem', color: '#1B3A6B' }}>{filteredTotal.toLocaleString('fr-MA')} DH</td>
               <td colSpan={2}/>
             </tr>
           </tfoot>

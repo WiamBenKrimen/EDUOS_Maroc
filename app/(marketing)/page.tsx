@@ -288,7 +288,6 @@ function Hero({ onOpenCandidature }: { onOpenCandidature: () => void }) {
       </div>
       <div style={{ maxWidth: 860, margin: '0 auto', padding: '0 28px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
         <div className="anim-up" style={{ marginBottom: 28 }}>
-          <span className="label-pill" style={{ fontSize: '.75rem', letterSpacing: '.06em' }}>La plateforme de gestion des centres de formation au Maroc</span>
         </div>
         <h1 className="anim-up d1" style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(2.6rem, 6vw, 5rem)', lineHeight: 1.06, letterSpacing: '-0.035em', color: 'var(--text)', marginBottom: 0 }}>
           Pilotez votre centre<br />de formation —
@@ -482,7 +481,6 @@ function PlatformDesc() {
     <section id="formations" style={{ padding: '100px 28px', background: '#F5F6F8' }}>
       <div style={{ maxWidth: 1080, margin: '0 auto' }}>
         <div ref={r} className="reveal" style={{ textAlign: 'center', marginBottom: 64 }}>
-          <span className="label-pill" style={{ marginBottom: 22, display: 'inline-flex' }}>Plateforme tout-en-un</span>
           <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(1.8rem, 3.5vw, 2.8rem)', lineHeight: 1.18, letterSpacing: '-.028em', color: 'var(--text)', marginBottom: 4 }}>De l'inscription jusqu'à la certification,</h2>
           <div style={{ fontFamily: 'var(--font-hand)', fontWeight: 700, fontSize: 'clamp(1.7rem, 3.2vw, 2.6rem)', color: 'var(--navy)', marginBottom: 22, lineHeight: 1.25 }}>
             tout est{' '}
@@ -514,7 +512,6 @@ function NotificationSection() {
     <section style={{ padding: '100px 28px', background: 'var(--bg-soft)' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <div ref={r} className="reveal" style={{ textAlign: 'center', marginBottom: 56 }}>
-          <span className="label-pill" style={{ marginBottom: 20, display: 'inline-flex' }}>Notifications intelligentes</span>
           <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(1.7rem, 3.5vw, 2.8rem)', lineHeight: 1.2, letterSpacing: '-.025em', color: 'var(--text)', marginBottom: 14 }}>
             Gardez vos apprenants<br /><span className="hl-gold">toujours engagés.</span>
           </h2>
@@ -599,7 +596,6 @@ function VideoSection() {
     <section style={{ padding: '80px 28px', background: '#fff' }}>
       <div style={{ maxWidth: 960, margin: '0 auto' }}>
         <div ref={r} className="reveal" style={{ textAlign: 'center', marginBottom: 44 }}>
-          <span className="label-pill-navy" style={{ marginBottom: 18, display: 'inline-flex' }}>Découvrez la plateforme</span>
           <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(1.7rem, 3.5vw, 2.8rem)', letterSpacing: '-.025em', color: 'var(--text)', marginBottom: 12 }}>
             Voyez EDUOS <span className="hl-gold">en action</span>
           </h2>
@@ -657,7 +653,6 @@ function FeaturesSection() {
     <section id="fonctions" style={{ padding: '100px 28px', background: 'var(--bg-soft)' }}>
       <div style={{ maxWidth: 1060, margin: '0 auto' }}>
         <div ref={r} className="reveal" style={{ textAlign: 'center', marginBottom: 44 }}>
-          <span className="label-pill" style={{ marginBottom: 20, display: 'inline-flex' }}>Fonctionnalités clés</span>
           <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(1.7rem, 3.5vw, 2.8rem)', lineHeight: 1.2, letterSpacing: '-.025em', color: 'var(--text)', marginBottom: 14 }}>
             <span className="hl-blue">Améliorez</span> la qualité<br />de votre formation
           </h2>

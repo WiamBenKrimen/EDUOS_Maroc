@@ -143,9 +143,7 @@ export default function TarifsPage() {
       {/* ── HERO TARIFS ── */}
       <section style={{ background: 'linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 100%)', padding: '80px 28px 40px', borderBottom: '1px solid #EEF0F4', textAlign: 'center' }}>
         <div style={{ maxWidth: 860, margin: '0 auto' }}>
-          <span className="label-pill" style={{ marginBottom: 18, display: 'inline-flex', fontSize: '.78rem', letterSpacing: '.06em', padding: '6px 16px' }}>
-            Tarification prédictive & transparente
-          </span>
+          
           <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(2.4rem, 5vw, 3.8rem)', lineHeight: 1.12, letterSpacing: '-0.035em', color: '#0F2347', marginBottom: 20 }}>
             Une offre adaptée à chaque centre de formation
           </h1>

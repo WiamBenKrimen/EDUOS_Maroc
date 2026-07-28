@@ -183,9 +183,7 @@ export default function CommentCaMarchePage() {
       <section style={{ background: 'linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 100%)', padding: '80px 28px 60px', borderBottom: '1px solid #EEF0F4', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
         <div style={{ maxWidth: 860, margin: '0 auto', position: 'relative', zIndex: 1 }}>
           <div style={{ marginBottom: 20 }}>
-            <span className="label-pill-navy" style={{ fontSize: '.78rem', letterSpacing: '.06em', padding: '6px 16px' }}>
-              Mise en route & Déploiement
-            </span>
+            
           </div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(2.4rem, 5vw, 3.8rem)', lineHeight: 1.12, letterSpacing: '-0.035em', color: '#0F2347', marginBottom: 20 }}>
             Comment fonctionne EDUOS dans votre centre ?

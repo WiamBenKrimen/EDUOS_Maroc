@@ -49,16 +49,25 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="auth-page">
-      <div className="auth-card">
-        {/* Logo plus grand et professionnel */}
+    <div className="auth-page auth-login-page">
+      <header className="auth-navbar">
+        <Link href="/" className="auth-nav-brand" aria-label="EDUOS Maroc - Accueil">
+          <Image src="/images/logo.png" alt="EDUOS MAROC" width={210} height={68} priority />
+        </Link>
+        <Link href="/" className="auth-home-link">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /><path d="M9 12h11" /></svg>
+          Retour à l'accueil
+        </Link>
+      </header>
+      <main className="auth-login-main">
+      <div className="auth-card auth-login-card">
         <Link href="/" className="auth-logo">
           <Image
             src="/images/logo.png"
             alt="EDUOS MAROC"
-            width={220}
-            height={70}
-            style={{ height: 62, width: 'auto', objectFit: 'contain' }}
+            width={300}
+            height={96}
+            style={{ height: 80, width: 'auto', objectFit: 'contain' }}
             priority
           />
         </Link>
@@ -138,6 +147,8 @@ export default function LoginPage() {
       </div>
 
       {/* Modal Mot de passe oublié */}
+      </main>
+
       {showForgotModal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 1200, background: 'rgba(9,24,46,.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
           <div style={{ width: '100%', maxWidth: 420, background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', padding: 28, boxShadow: '0 16px 40px rgba(0,0,0,.15)' }}>

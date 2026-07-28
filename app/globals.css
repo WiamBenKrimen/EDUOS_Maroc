@@ -3435,6 +3435,16 @@ body {
 .director-v2-rec-list article:nth-child(2) span{background:#fef3c7;color:#b45309}
 .director-v2-grid header>a,.director-v2-health>a{color:#1b3a6b}
 
+/* Login page: simple navigation and elevated authentication surface */
+.auth-login-page{display:block;position:relative;min-height:100dvh;padding:0;background:#f5f7fa}
+.auth-navbar{height:76px;display:flex;align-items:center;justify-content:space-between;padding:0 clamp(20px,5vw,72px);border-bottom:1px solid #e2e8f0;background:rgba(255,255,255,.96)}
+.auth-nav-brand{display:flex;align-items:center;height:100%;text-decoration:none}.auth-nav-brand img{width:auto;height:52px;object-fit:contain}
+.auth-home-link{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 13px;border:1px solid #d7e0ea;border-radius:7px;background:#fff;color:#17345d;font:750 .74rem var(--font-display);text-decoration:none;transition:border-color .16s ease,background .16s ease,box-shadow .16s ease}.auth-home-link svg{width:16px;height:16px}.auth-home-link:hover{border-color:#aebfd2;background:#f8fafc;box-shadow:0 2px 7px rgba(15,35,71,.08)}
+.auth-login-main{display:flex;align-items:center;justify-content:center;min-height:calc(100dvh - 76px);padding:40px 20px}
+.auth-login-card{max-width:468px;padding:38px 42px 34px;border-color:#dce4ed;border-radius:12px;box-shadow:0 18px 48px rgba(15,35,71,.09),0 2px 6px rgba(15,35,71,.04)}
+.auth-login-card .auth-logo{display:flex;justify-content:center;width:100%;margin-bottom:22px}.auth-login-card .auth-heading{text-align:center;font-size:1.48rem;letter-spacing:0}.auth-login-card .auth-sub{text-align:center;margin:0 auto 30px;max-width:330px;line-height:1.55}.auth-login-card .auth-submit{height:44px;margin-top:22px;border-radius:7px;background:#0f2347}.auth-login-card .auth-submit:hover{background:#1b3a6b}
+@media(max-width:600px){.auth-navbar{height:64px;padding:0 16px}.auth-nav-brand img{height:44px}.auth-home-link{padding:0 10px;font-size:.68rem}.auth-login-main{min-height:calc(100dvh - 64px);padding:24px 14px}.auth-login-card{padding:30px 22px 26px}.auth-login-card .auth-logo img{height:68px!important}}
+
 /* Shared director search and filtering workspace */
 .director-filter-bar{display:flex;align-items:end;gap:12px;min-height:74px;margin-bottom:22px;padding:12px 14px;border:1px solid #d7e0ea;border-radius:10px;background:#fff;box-shadow:0 1px 3px rgba(15,35,71,.05)}
 .director-search-field{position:relative;display:flex;align-items:center;flex:1;min-width:220px;height:42px;border:1px solid #cbd7e4;border-radius:7px;background:#fff;color:#718198;transition:border-color .16s ease,box-shadow .16s ease}

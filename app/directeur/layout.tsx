@@ -133,9 +133,12 @@ export default function DirecteurLayout({ children }: { children: ReactNode }) {
 
         {/* Footer User */}
         <div className="dir-sidebar-footer">
-          <div className="dir-user-info">
-            <strong>Ahmed Bennani</strong>
-            <span>Directeur Général</span>
+          <div className="dir-footer-user-card">
+            <div className="dir-footer-avatar">AB</div>
+            <div className="dir-user-info">
+              <strong>Ahmed Bennani</strong>
+              <span>Directeur Général</span>
+            </div>
           </div>
           <LogoutButton />
         </div>

@@ -6,14 +6,14 @@ const BLUE = '#1B3A6B'
 const GOLD = '#D97706'
 
 const INITIAL_RENOUVELLEMENTS = [
-  { id: 1, nom: 'Ahmed Cherkaoui', formation: 'Anglais B1', expiration: '31 août 2025', jours: 39, action: 'Contacté' },
-  { id: 2, nom: 'Fatima Zahra El Idrissi', formation: 'Français B2', expiration: '15 août 2025', jours: 23, action: 'En attente' },
-  { id: 3, nom: 'Karim Ouali', formation: 'Anglais B2', expiration: '10 août 2025', jours: 18, action: 'Intéressé' },
-  { id: 4, nom: 'Sara Benali', formation: 'Gestion de projet', expiration: '05 août 2025', jours: 13, action: 'En attente' },
-  { id: 5, nom: 'Omar Tahiri', formation: 'Marketing digital', expiration: '01 août 2025', jours: 9, action: 'Urgent' },
-  { id: 6, nom: 'Nour El Houda Fassi', formation: 'Français A2', expiration: '28 juil. 2025', jours: 5, action: 'Urgent' },
-  { id: 7, nom: 'Yasmine Ait Ouali', formation: 'Espagnol débutant', expiration: '25 juil. 2025', jours: 2, action: 'Urgent' },
-  { id: 8, nom: 'Mehdi Bensouda', formation: 'Anglais B1', expiration: '20 sept. 2025', jours: 59, action: 'Programmé' },
+  { id: 1, nom: 'Ahmed Cherkaoui', telephone: '212661234501', formation: 'Anglais B1', expiration: '31 août 2025', jours: 39, action: 'Contacté' },
+  { id: 2, nom: 'Fatima Zahra El Idrissi', telephone: '212661234502', formation: 'Français B2', expiration: '15 août 2025', jours: 23, action: 'En attente' },
+  { id: 3, nom: 'Karim Ouali', telephone: '212661234503', formation: 'Anglais B2', expiration: '10 août 2025', jours: 18, action: 'Intéressé' },
+  { id: 4, nom: 'Sara Benali', telephone: '212661234504', formation: 'Gestion de projet', expiration: '05 août 2025', jours: 13, action: 'En attente' },
+  { id: 5, nom: 'Omar Tahiri', telephone: '212661234505', formation: 'Marketing digital', expiration: '01 août 2025', jours: 9, action: 'Urgent' },
+  { id: 6, nom: 'Nour El Houda Fassi', telephone: '212661234506', formation: 'Français A2', expiration: '28 juil. 2025', jours: 5, action: 'Urgent' },
+  { id: 7, nom: 'Yasmine Ait Ouali', telephone: '212661234507', formation: 'Espagnol débutant', expiration: '25 juil. 2025', jours: 2, action: 'Urgent' },
+  { id: 8, nom: 'Mehdi Bensouda', telephone: '212661234508', formation: 'Anglais B1', expiration: '20 sept. 2025', jours: 59, action: 'Programmé' },
 ]
 
 function joursColor(j: number) {
@@ -35,15 +35,32 @@ const ACTION_MAP: Record<string, { color: string; bg: string }> = {
 export default function RenouvellemmentsPage() {
   const [renouvellements, setRenouvellements] = useState(INITIAL_RENOUVELLEMENTS)
   const [toast, setToast] = useState<string | null>(null)
+  const [selectedRenewal, setSelectedRenewal] = useState<(typeof INITIAL_RENOUVELLEMENTS)[number] | null>(null)
+  const [duration, setDuration] = useState('6')
+  const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10))
+  const [amount, setAmount] = useState('1200')
 
   const triggerToast = (msg: string) => {
     setToast(msg)
     setTimeout(() => setToast(null), 3000)
   }
 
-  const handleRenew = (id: number, nom: string) => {
-    setRenouvellements(prev => prev.map(r => r.id === id ? { ...r, action: 'Renouvelé', jours: 180, expiration: '2026' } : r))
-    triggerToast(`Contrat de ${nom} renouvelé pour un nouveau cycle !`)
+  const handleWhatsApp = (renewal: (typeof INITIAL_RENOUVELLEMENTS)[number]) => {
+    const message = `Bonjour ${renewal.nom}, votre cycle ${renewal.formation} arrive à échéance le ${renewal.expiration}. Souhaitez-vous renouveler votre inscription ? L’équipe EDUOS Maroc reste à votre disposition.`
+    window.open(`https://wa.me/${renewal.telephone}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer')
+    setRenouvellements(prev => prev.map(item => item.id === renewal.id ? { ...item, action: 'Contacté' } : item))
+    triggerToast(`Conversation WhatsApp ouverte pour ${renewal.nom}.`)
+  }
+
+  const handleRenew = (event: React.FormEvent) => {
+    event.preventDefault()
+    if (!selectedRenewal) return
+    const endDate = new Date(`${startDate}T12:00:00`)
+    endDate.setMonth(endDate.getMonth() + Number(duration))
+    const formattedDate = new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }).format(endDate)
+    setRenouvellements(prev => prev.map(item => item.id === selectedRenewal.id ? { ...item, action: 'Renouvelé', jours: Number(duration) * 30, expiration: formattedDate } : item))
+    triggerToast(`Renouvellement de ${selectedRenewal.nom} validé pour ${duration} mois · ${amount} DH.`)
+    setSelectedRenewal(null)
   }
 
   const handleSendAllRelances = () => {
@@ -161,7 +178,7 @@ export default function RenouvellemmentsPage() {
                   <td style={{ padding: '14px 20px' }}>
                     <div style={{ display: 'flex', gap: 8 }}>
                       <button
-                        onClick={() => triggerToast(`Lien WhatsApp de relance généré pour ${r.nom} !`)}
+                        onClick={() => handleWhatsApp(r)}
                         style={{ padding: '6px 12px', borderRadius: 7, border: '1px solid #CBD5E1', background: '#fff', fontSize: '.78rem', fontWeight: 700, color: NAVY, cursor: 'pointer' }}
                       >
                         WhatsApp
@@ -169,7 +186,7 @@ export default function RenouvellemmentsPage() {
 
                       {r.action !== 'Renouvelé' && (
                         <button
-                          onClick={() => handleRenew(r.id, r.nom)}
+                          onClick={() => setSelectedRenewal(r)}
                           style={{ padding: '6px 12px', borderRadius: 7, border: 'none', background: BLUE, fontSize: '.78rem', fontWeight: 800, color: '#fff', cursor: 'pointer' }}
                         >
                           Renouveler
@@ -183,6 +200,47 @@ export default function RenouvellemmentsPage() {
           </tbody>
         </table>
       </div>
+
+      {selectedRenewal && (
+        <div className="renew-modal-backdrop" role="presentation" onMouseDown={() => setSelectedRenewal(null)}>
+          <section className="renew-modal" role="dialog" aria-modal="true" aria-labelledby="renew-title" onMouseDown={event => event.stopPropagation()}>
+            <header>
+              <div>
+                <span>Nouvelle réinscription</span>
+                <h2 id="renew-title">Renouveler {selectedRenewal.nom}</h2>
+                <p>{selectedRenewal.formation}</p>
+              </div>
+              <button type="button" onClick={() => setSelectedRenewal(null)} aria-label="Fermer">×</button>
+            </header>
+            <form onSubmit={handleRenew}>
+              <label>
+                Durée du nouveau cycle
+                <select value={duration} onChange={event => setDuration(event.target.value)}>
+                  <option value="3">3 mois</option>
+                  <option value="6">6 mois</option>
+                  <option value="12">12 mois</option>
+                </select>
+              </label>
+              <label>
+                Date de début
+                <input type="date" value={startDate} onChange={event => setStartDate(event.target.value)} required/>
+              </label>
+              <label>
+                Montant convenu
+                <span className="renew-amount"><input type="number" min="0" step="50" value={amount} onChange={event => setAmount(event.target.value)} required/><b>DH</b></span>
+              </label>
+              <div className="renew-summary">
+                <span>Nouveau cycle</span>
+                <strong>{duration} mois · {Number(amount || 0).toLocaleString('fr-FR')} DH</strong>
+              </div>
+              <footer>
+                <button type="button" onClick={() => setSelectedRenewal(null)}>Annuler</button>
+                <button type="submit">Confirmer le renouvellement</button>
+              </footer>
+            </form>
+          </section>
+        </div>
+      )}
     </div>
   )
 }

@@ -40,8 +40,21 @@ export function getUser(): User | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return null
-    return JSON.parse(raw) as User
+    const user = JSON.parse(raw) as Partial<User>
+    const validRoles: Role[] = ['admin', 'directeur', 'personnel', 'participant']
+    if (
+      typeof user.id !== 'string' ||
+      typeof user.nom !== 'string' ||
+      typeof user.email !== 'string' ||
+      typeof user.token !== 'string' ||
+      !validRoles.includes(user.role as Role)
+    ) {
+      clearUser()
+      return null
+    }
+    return user as User
   } catch {
+    localStorage.removeItem(STORAGE_KEY)
     return null
   }
 }

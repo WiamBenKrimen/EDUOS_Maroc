@@ -1,6 +1,7 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import SearchFilterBar from '../search-filter-bar'
+import { api } from '../../../lib/api-client'
 
 const NAVY = '#0F2347'
 const BLUE = '#1B3A6B'
@@ -17,15 +18,25 @@ const INITIAL_PROSPECTS = [
   { id: 8, nom: 'Omar Tahiri', formation: 'Informatique bureautique', contact: '25 juin 2025', telephone: '06 68 01 23 45', email: 'o.tahiri@gmail.com', statut: 'En cours', color: GOLD, bg: '#FEF3C7' },
 ]
 
+function mapProspect(item: any) {
+  const styles: Record<string, [string, string, string]> = {
+    nouveau: ['Nouveau', '#0284C7', '#EBF5FF'], en_cours: ['En cours', GOLD, '#FEF3C7'],
+    inscrit: ['Inscrit', '#059669', '#ECFDF5'], perdu: ['Perdu', '#DC2626', '#FEE2E2'],
+  }
+  const [statut, color, bg] = styles[item.statut] ?? styles.nouveau
+  return { id: item.id, nom: item.nom_complet, formation: item.formation_souhaitee ?? 'Non précisée', contact: new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium' }).format(new Date(item.created_at)), telephone: item.telephone ?? '—', email: item.email ?? '—', statut, color, bg }
+}
+
 export default function ProspectsPage() {
-  const [prospects, setProspects] = useState(INITIAL_PROSPECTS)
+  const [prospects, setProspects] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedStatus, setSelectedStatus] = useState('Tous')
   const [toast, setToast] = useState<string | null>(null)
 
   // Modals
   const [showAddModal, setShowAddModal] = useState(false)
-  const [viewProspect, setViewProspect] = useState<typeof INITIAL_PROSPECTS[0] | null>(null)
+  const [viewProspect, setViewProspect] = useState<any | null>(null)
 
   // Form State
   const [newNom, setNewNom] = useState('')
@@ -38,30 +49,30 @@ export default function ProspectsPage() {
     setTimeout(() => setToast(null), 3000)
   }
 
-  const handleAddProspect = (e: React.FormEvent) => {
-    e.preventDefault()
-    const newEntry = {
-      id: Date.now(),
-      nom: newNom,
-      formation: newFormation,
-      contact: 'Aujourd\'hui',
-      telephone: newPhone || '06 00 00 00 00',
-      email: newEmail || 'prospect@gmail.com',
-      statut: 'Nouveau',
-      color: '#0284C7',
-      bg: '#EBF5FF'
-    }
-    setProspects([newEntry, ...prospects])
-    setShowAddModal(false)
-    triggerToast(`Prospect "${newNom}" ajouté avec succès !`)
-    setNewNom('')
-    setNewPhone('')
-    setNewEmail('')
+  async function loadProspects() {
+    try { setLoading(true); setProspects((await api.get<any[]>('/director/prospects')).map(mapProspect)) }
+    catch (error) { triggerToast(error instanceof Error ? error.message : 'Impossible de charger les prospects.') }
+    finally { setLoading(false) }
   }
 
-  const convertToEnrollment = (id: number, nom: string) => {
-    setProspects(prev => prev.map(p => p.id === id ? { ...p, statut: 'Inscrit', color: '#059669', bg: '#ECFDF5' } : p))
-    triggerToast(`Prospect "${nom}" converti en élève inscrit !`)
+  useEffect(() => { void loadProspects() }, [])
+
+  const handleAddProspect = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      const created = await api.post<any>('/director/prospects', { nom_complet: newNom, formation_souhaitee: newFormation, telephone: newPhone || null, email: newEmail || null })
+      setProspects(current => [mapProspect(created), ...current])
+      setShowAddModal(false); triggerToast(`Prospect "${newNom}" ajouté avec succès !`)
+      setNewNom(''); setNewPhone(''); setNewEmail('')
+    } catch (error) { triggerToast(error instanceof Error ? error.message : 'Création impossible.') }
+  }
+
+  const convertToEnrollment = async (id: string, nom: string) => {
+    try {
+      const updated = await api.patch<any>(`/director/prospects/${id}/statut`, { statut: 'inscrit' })
+      setProspects(prev => prev.map(p => p.id === id ? mapProspect(updated) : p))
+      triggerToast(`Prospect "${nom}" converti en élève inscrit !`)
+    } catch (error) { triggerToast(error instanceof Error ? error.message : 'Mise à jour impossible.') }
   }
 
   const filtered = prospects.filter(p => {

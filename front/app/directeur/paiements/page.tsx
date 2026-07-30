@@ -1,32 +1,50 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import SearchFilterBar from '../search-filter-bar'
+import { api } from '../../../lib/api-client'
 
 const NAVY = '#0F2347'
 const BLUE = '#1B3A6B'
 const GOLD = '#D97706'
 
-const INITIAL_RECENT = [
-  { id: 1, nom: 'Ahmed Cherkaoui', formation: 'Anglais B1', montant: 450, date: '22 juil. 2025', mode: 'Virement', statut: 'Payé' },
-  { id: 2, nom: 'Fatima Zahra El Idrissi', formation: 'Français B2', montant: 680, date: '21 juil. 2025', mode: 'Espèces', statut: 'Payé' },
-  { id: 3, nom: 'Karim Ouali', formation: 'Anglais B2', montant: 520, date: '20 juil. 2025', mode: 'Virement', statut: 'Payé' },
-  { id: 4, nom: 'Sara Benali', formation: 'Gestion de projet', montant: 750, date: '18 juil. 2025', mode: 'Chèque', statut: 'En attente' },
-  { id: 5, nom: 'Omar Tahiri', formation: 'Marketing digital', montant: 580, date: '15 juil. 2025', mode: 'Espèces', statut: 'En retard' },
-  { id: 6, nom: 'Nour El Houda Fassi', formation: 'Français A2', montant: 380, date: '10 juil. 2025', mode: 'Virement', statut: 'Payé' },
-]
+function mapFacture(item: any) {
+  const statutMap: Record<string, string> = {
+    payee: 'Payé', partiellement_payee: 'Partiel', en_attente: 'En attente',
+    en_retard: 'En retard', annulee: 'Annulée', brouillon: 'Brouillon', emise: 'Émise',
+  }
+  const modeMap: Record<string, string> = { carte: 'Carte', virement: 'Virement', especes: 'Espèces', cheque: 'Chèque', tpe: 'TPE' }
+  const lastPay = Array.isArray(item.paiements) && item.paiements.length ? item.paiements[item.paiements.length - 1] : null
+  return {
+    id: item.id,
+    nom: item.participant_nom,
+    formation: item.cohorte_nom,
+    montant: Number(item.montant_ttc),
+    date: item.date_echeance ? new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium' }).format(new Date(item.date_echeance)) : '—',
+    mode: lastPay ? (modeMap[lastPay.methode] ?? lastPay.methode) : '—',
+    statut: statutMap[item.facture_statut] ?? item.facture_statut,
+  }
+}
 
 export default function PaiementsPage() {
-  const [payments, setPayments] = useState(INITIAL_RECENT)
+  const [payments, setPayments] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [toast, setToast] = useState<string | null>(null)
   const [showRelanceModal, setShowRelanceModal] = useState(false)
+
+  useEffect(() => {
+    api.get<any[]>('/director/paiements')
+      .then(items => setPayments(items.map(mapFacture)))
+      .catch(err => triggerToast(err instanceof Error ? err.message : 'Impossible de charger les paiements.'))
+      .finally(() => setLoading(false))
+  }, [])
 
   const triggerToast = (msg: string) => {
     setToast(msg)
     setTimeout(() => setToast(null), 3000)
   }
 
-  const downloadReceipt = (p: typeof INITIAL_RECENT[0]) => {
+  const downloadReceipt = (p: any) => {
     const textContent = `EDUOS MAROC - REÇU DE PAIEMENT ÉLÈVE\n` +
       `========================================\n` +
       `Apprenant: ${p.nom}\n` +
@@ -41,17 +59,17 @@ export default function PaiementsPage() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `Recu_Paiement_${p.nom.replace(/ /g, '_')}.pdf`
+    a.download = `Recu_Paiement_${p.nom.replace(/ /g, '_')}.txt`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
-    triggerToast(`Reçu PDF téléchargé pour ${p.nom} !`)
+    triggerToast(`Reçu téléchargé pour ${p.nom} !`)
   }
 
   const handleSendRelances = () => {
     setShowRelanceModal(false)
-    triggerToast('Relances automatiques par SMS & WhatsApp envoyées aux 12 apprenants en retard !')
+    triggerToast('Relances automatiques par SMS & WhatsApp envoyées aux apprenants en retard !')
   }
 
   const filtered = payments.filter(p => p.nom.toLowerCase().includes(searchQuery.toLowerCase()) || p.formation.toLowerCase().includes(searchQuery.toLowerCase()))

@@ -1,19 +1,27 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import SearchFilterBar from '../search-filter-bar'
+import { api } from '../../../lib/api-client'
 
 const NAVY = '#0F2347'
 const BLUE = '#1B3A6B'
 const GOLD = '#D97706'
 
-const INITIAL_COHORTES = [
-  { id: 1, name: 'Anglais B1 — Matin', formateur: 'Karim Alaoui', eleves: 18, max: 20, sessions: 'Lun / Mer / Ven 9h–11h', debut: 'Sept. 2025' },
-  { id: 2, name: 'Français A2 — Soir', formateur: 'Laila Bennouna', eleves: 14, max: 16, sessions: 'Mar / Jeu 18h–20h', debut: 'Oct. 2025' },
-  { id: 3, name: 'Espagnol Débutant', formateur: 'Omar El Fassi', eleves: 12, max: 20, sessions: 'Sam 9h–13h', debut: 'Sept. 2025' },
-  { id: 4, name: 'Gestion de projet', formateur: 'Sanae Tahiri', eleves: 20, max: 20, sessions: 'Lun / Mer 17h–19h', debut: 'Juil. 2025' },
-  { id: 5, name: 'Marketing digital', formateur: 'Youssef Chraibi', eleves: 9, max: 15, sessions: 'Mar / Ven 10h–12h', debut: 'Oct. 2025' },
-  { id: 6, name: 'Anglais C1 — Intensif', formateur: 'Nadia Rami', eleves: 8, max: 10, sessions: 'Lun–Ven 8h–10h', debut: 'Août 2025' },
-]
+
+function mapCohorte(item: any) {
+  const debut = item.date_debut ? new Intl.DateTimeFormat('fr-FR', { month: 'short', year: 'numeric' }).format(new Date(item.date_debut)) : '—'
+  return {
+    id: item.id,
+    formation_id: item.formation_id ?? '',
+    name: item.nom,
+    formateur: item.formateur ?? 'Non affecté',
+    eleves: Number(item.inscrits ?? 0),
+    max: Number(item.capacite),
+    sessions: item.salle ?? '',
+    debut,
+    statut: item.statut,
+  }
+}
 
 function fillColor(pct: number) {
   if (pct >= 95) return '#059669'
@@ -23,41 +31,64 @@ function fillColor(pct: number) {
 }
 
 export default function CohortesPage() {
-  const [cohortes, setCohortes] = useState(INITIAL_COHORTES)
+  const [cohortes, setCohortes] = useState<any[]>([])
+  const [formations, setFormations] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   
   // Modals
   const [showAddModal, setShowAddModal] = useState(false)
-  const [selectedCohorte, setSelectedCohorte] = useState<typeof INITIAL_COHORTES[0] | null>(null)
-  const [editCohorte, setEditCohorte] = useState<typeof INITIAL_COHORTES[0] | null>(null)
+  const [selectedCohorte, setSelectedCohorte] = useState<any | null>(null)
+  const [editCohorte, setEditCohorte] = useState<any | null>(null)
 
   // Add Cohort state
   const [newName, setNewName] = useState('')
-  const [newFormateur, setNewFormateur] = useState('Karim Alaoui')
+  const [newFormationId, setNewFormationId] = useState('')
   const [newMax, setNewMax] = useState(20)
-  const [newSessions, setNewSessions] = useState('Lun / Mer 18h-20h')
+  const [newDateDebut, setNewDateDebut] = useState('')
+  const [newDateFin, setNewDateFin] = useState('')
+  const [newSalle, setNewSalle] = useState('')
+  const [formError, setFormError] = useState('')
+
+  useEffect(() => {
+    Promise.all([
+      api.get<any[]>('/director/cohortes'),
+      api.get<any[]>('/director/formations'),
+    ]).then(([cohs, forms]) => {
+      setCohortes(cohs.map(mapCohorte))
+      setFormations(forms)
+    }).catch(err => triggerToast(err instanceof Error ? err.message : 'Impossible de charger les cohortes.'))
+     .finally(() => setLoading(false))
+  }, [])
 
   const triggerToast = (msg: string) => {
     setToast(msg)
     setTimeout(() => setToast(null), 3000)
   }
 
-  const handleAddCohorte = (e: React.FormEvent) => {
+  const handleAddCohorte = async (e: React.FormEvent) => {
     e.preventDefault()
-    const newEntry = {
-      id: Date.now(),
-      name: newName,
-      formateur: newFormateur,
-      eleves: 1,
-      max: Number(newMax) || 20,
-      sessions: newSessions,
-      debut: 'Aujourd\'hui'
+    setFormError('')
+    if (!newFormationId) { setFormError('Veuillez sélectionner une formation.'); return }
+    const code = `COH-${Date.now()}`
+    try {
+      const created = await api.post<any>('/director/cohortes', {
+        nom: newName,
+        formation_id: newFormationId,
+        code,
+        date_debut: newDateDebut,
+        date_fin: newDateFin,
+        capacite: Number(newMax) || 20,
+        salle: newSalle || null,
+      })
+      setCohortes(prev => [mapCohorte({ ...created, inscrits: 0, formateur: 'Non affecté', formation_id: newFormationId }), ...prev])
+      setShowAddModal(false)
+      triggerToast(`Cohorte "${newName}" créée avec succès !`)
+      setNewName(''); setNewFormationId(''); setNewSalle(''); setNewDateDebut(''); setNewDateFin('')
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'Création impossible.')
     }
-    setCohortes([newEntry, ...cohortes])
-    setShowAddModal(false)
-    triggerToast(`Cohorte "${newName}" créée avec succès !`)
-    setNewName('')
   }
 
   const handleEditSubmit = (e: React.FormEvent) => {
@@ -252,41 +283,46 @@ export default function CohortesPage() {
                   value={newName}
                   onChange={e => setNewName(e.target.value)}
                   required
-                  style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13 }}
+                  style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, boxSizing: 'border-box' }}
                 />
+              </div>
+
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 4 }}>Formation</label>
+                <select
+                  value={newFormationId}
+                  onChange={e => setNewFormationId(e.target.value)}
+                  required
+                  style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, boxSizing: 'border-box', background: '#fff' }}
+                >
+                  <option value="">— Sélectionner une formation —</option>
+                  {formations.map((f: any) => <option key={f.id} value={f.id}>{f.titre} ({f.prix_mensuel} DH/mois)</option>)}
+                </select>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 4 }}>Formateur</label>
-                  <input
-                    type="text"
-                    value={newFormateur}
-                    onChange={e => setNewFormateur(e.target.value)}
-                    style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13 }}
-                  />
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 4 }}>Date de début</label>
+                  <input type="date" value={newDateDebut} onChange={e => setNewDateDebut(e.target.value)} required style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, boxSizing: 'border-box' }} />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 4 }}>Capacité Max</label>
-                  <input
-                    type="number"
-                    value={newMax}
-                    onChange={e => setNewMax(Number(e.target.value))}
-                    style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13 }}
-                  />
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 4 }}>Date de fin</label>
+                  <input type="date" value={newDateFin} onChange={e => setNewDateFin(e.target.value)} required style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, boxSizing: 'border-box' }} />
                 </div>
               </div>
 
-              <div style={{ marginBottom: 20 }}>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 4 }}>Planning / Horaires</label>
-                <input
-                  type="text"
-                  placeholder="Lun / Mer 18h-20h"
-                  value={newSessions}
-                  onChange={e => setNewSessions(e.target.value)}
-                  style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13 }}
-                />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 4 }}>Capacité Max</label>
+                  <input type="number" value={newMax} onChange={e => setNewMax(Number(e.target.value))} min={1} style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, boxSizing: 'border-box' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 4 }}>Salle</label>
+                  <input type="text" placeholder="Salle A1" value={newSalle} onChange={e => setNewSalle(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, boxSizing: 'border-box' }} />
+                </div>
               </div>
+
+              {formError && <div style={{ color: '#DC2626', fontSize: 12, marginBottom: 12, padding: '8px 12px', background: '#FEF2F2', borderRadius: 6 }}>{formError}</div>}
 
               <div style={{ display: 'flex', gap: 10 }}>
                 <button

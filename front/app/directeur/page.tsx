@@ -1,13 +1,14 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { api } from '../../lib/api-client'
 
-const kpis = [
-  { label: 'Élèves actifs', value: '347', trend: '+12 ce mois', icon: 'students' },
-  { label: 'Taux de présence', value: '87 %', trend: '+2,1 % ce mois', icon: 'attendance' },
-  { label: 'CA encaissé', value: '84 200 DH', trend: '+8,4 % ce mois', icon: 'revenue' },
-  { label: 'Paiements en retard', value: '23', trend: '18 450 DH à traiter', icon: 'warning', alert: true },
+const STATIC_KPIS = [
+  { label: 'Élèves actifs', value: '—', trend: 'Chargement…', icon: 'students' },
+  { label: 'Taux de présence', value: '—', trend: 'Chargement…', icon: 'attendance' },
+  { label: 'CA encaissé', value: '—', trend: 'Mois en cours', icon: 'revenue' },
+  { label: 'Paiements en retard', value: '—', trend: 'Chargement…', icon: 'warning', alert: true },
 ]
 
 const recommendations = [
@@ -35,6 +36,7 @@ function DashboardIcon({ name }: { name: string }) {
 }
 
 export default function DirecteurDashboard() {
+  const [kpis, setKpis] = useState(STATIC_KPIS)
   const [toast, setToast] = useState('')
   const [hiddenRecommendations, setHiddenRecommendations] = useState<string[]>([])
   const [actions, setActions] = useState(recommendations)
@@ -43,6 +45,19 @@ export default function DirecteurDashboard() {
   const [actionCategory, setActionCategory] = useState('Cohortes')
   const [actionPriority, setActionPriority] = useState('Normale')
   const [actionDueDate, setActionDueDate] = useState('')
+
+  useEffect(() => {
+    api.get<{ eleves_actifs: number; taux_presence: number; ca_encaisse: number; paiements_retard: number }>('/director/dashboard')
+      .then((data: { eleves_actifs: number; taux_presence: number; ca_encaisse: number; paiements_retard: number }) => {
+        setKpis([
+          { label: 'Élèves actifs', value: String(data.eleves_actifs), trend: 'Total confirmés', icon: 'students' },
+          { label: 'Taux de présence', value: `${data.taux_presence} %`, trend: 'Toutes séances', icon: 'attendance' },
+          { label: 'CA encaissé', value: `${Number(data.ca_encaisse).toLocaleString('fr-FR')} DH`, trend: 'Mois en cours', icon: 'revenue' },
+          { label: 'Paiements en retard', value: String(data.paiements_retard), trend: 'Factures échuées', icon: 'warning', alert: data.paiements_retard > 0 },
+        ])
+      })
+      .catch(() => {/* silently keep static */})
+  }, [])
 
   function notify(message: string) {
     setToast(message)

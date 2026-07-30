@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { createAccount } from '../../../lib/auth'
+import { useEffect, useState } from 'react'
+import { api } from '../../../lib/api-client'
 
 const STEPS = [
   { label: 'Informations élève', sub: 'Coordonnées personnelles' },
@@ -29,6 +29,8 @@ export default function InscriptionPage() {
   const [successToast, setSuccessToast] = useState(false)
   const [accountError, setAccountError] = useState('')
   const [temporaryPassword, setTemporaryPassword] = useState('Bienvenue2026!')
+  const [groups, setGroups] = useState<any[]>([])
+  const [groupsError, setGroupsError] = useState('')
 
   // Form State
   const [formData, setFormData] = useState({
@@ -41,23 +43,25 @@ export default function InscriptionPage() {
     notes: 'Inscription recommandée par le centre Atlas.'
   })
 
-  const group = MOCK_GROUPS[selectedGroup]
+  const group = groups[selectedGroup] ?? { id: '', name: 'Chargement des cohortes…', schedule: '', spots: 0, total: 0, price: 0, formateur: '' }
   const plan = PLANS.find(p => p.id === selectedPlan)!
   const totalPrice = (group.price * plan.factor).toFixed(0)
+
+  useEffect(() => {
+    api.get<any[]>('/director/enrollment-options').then(items => {
+      setGroups(items.map(item => ({ id: item.id, name: item.nom, schedule: `${item.date_debut} → ${item.date_fin}`, spots: item.capacite - item.inscrits, total: item.capacite, price: Number(item.prix_mensuel), formateur: item.formateur ?? 'Non affecté' })))
+    }).catch(error => setGroupsError(error instanceof Error ? error.message : 'Impossible de charger les cohortes.'))
+  }, [])
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
-  const handleSubmitInscription = () => {
+  const handleSubmitInscription = async () => {
     setAccountError('')
     try {
-      createAccount({
-        nom: `${formData.prenom} ${formData.nom}`.trim(),
-        email: formData.email,
-        password: temporaryPassword,
-        role: 'participant',
-      })
+      if (!group) throw new Error('Veuillez sélectionner une cohorte.')
+      await api.post('/director/enrollments', { prenom: formData.prenom, nom: formData.nom, email: formData.email, password: temporaryPassword, telephone: formData.telephone || null, date_naissance: formData.dob || null, ville: formData.ville || null, adresse: formData.notes || null, cohorte_id: group.id, plan: selectedPlan })
       setShowSuccessModal(true)
       setSuccessToast(true)
       setTimeout(() => setSuccessToast(false), 4000)
@@ -186,7 +190,7 @@ export default function InscriptionPage() {
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 24 }}>
-                {MOCK_GROUPS.map((g, gi) => {
+                {groups.map((g, gi) => {
                   const selected = selectedGroup === gi
                   return (
                     <div

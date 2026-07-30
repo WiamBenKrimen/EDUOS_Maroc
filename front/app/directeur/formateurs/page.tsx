@@ -1,21 +1,13 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import SearchFilterBar from '../search-filter-bar'
-import { createAccount, type PersonnelFonction } from '../../../lib/auth'
+import { api } from '../../../lib/api-client'
+type PersonnelFonction = 'coordinateur' | 'commercial' | 'formateur' | 'enseignant'
 
 const NAVY = '#0F2347'
 const BLUE = '#1B3A6B'
 const GOLD = '#D97706'
-
-const INITIAL_FORMATEURS = [
-  { id: 1, nom: 'Karim Alaoui', role: 'Formateur', specialite: 'Langues — Anglais B1 / B2', groupes: 3, sessions: 24, taux: 120, note: 4.8, email: 'k.alaoui@eduos.ma', tel: '06 61 22 33 44' },
-  { id: 2, nom: 'Laila Bennouna', role: 'Enseignant', specialite: 'Langues — Français A2 / B2', groupes: 2, sessions: 18, taux: 110, note: 4.9, email: 'l.bennouna@eduos.ma', tel: '06 62 33 44 55' },
-  { id: 3, nom: 'Omar El Fassi', role: 'Commercial', specialite: 'Développement commercial', groupes: 0, sessions: 0, taux: 0, note: 4.7, email: 'o.elfassi@eduos.ma', tel: '06 63 44 55 66' },
-  { id: 4, nom: 'Sanae Tahiri', role: 'Coordinateur', specialite: 'Gestion pédagogique', groupes: 4, sessions: 0, taux: 0, note: 4.6, email: 's.tahiri@eduos.ma', tel: '06 64 55 66 77' },
-  { id: 5, nom: 'Youssef Chraibi', role: 'Formateur', specialite: 'Marketing digital & Social Media', groupes: 1, sessions: 10, taux: 115, note: 4.5, email: 'y.chraibi@eduos.ma', tel: '06 65 66 77 88' },
-  { id: 6, nom: 'Nadia Rami', role: 'Enseignant', specialite: 'Anglais intensif & TOEFL', groupes: 2, sessions: 20, taux: 140, note: 5.0, email: 'n.rami@eduos.ma', tel: '06 66 77 88 99' },
-]
 
 function Stars({ n }: { n: number }) {
   return (
@@ -30,24 +22,50 @@ function Stars({ n }: { n: number }) {
   )
 }
 
+function mapPersonnel(item: any) {
+  const fonctionLabel: Record<string, string> = { coordinateur: 'Coordinateur', commercial: 'Commercial', formateur: 'Formateur', enseignant: 'Enseignant' }
+  return {
+    id: item.id,
+    nom: `${item.prenom} ${item.nom}`,
+    role: fonctionLabel[item.personnel_fonction] ?? item.personnel_fonction,
+    specialite: item.specialite || 'Général',
+    groupes: Number(item.groupes_actifs ?? 0),
+    sessions: 0,
+    taux: Number(item.taux_horaire ?? 0),
+    note: Number(item.note ?? 0),
+    email: item.email,
+    tel: item.telephone ?? '—',
+  }
+}
+
 export default function FormateursPage() {
   const coordinatorMode = usePathname().startsWith('/personnel/coordinateur')
-  const [formateurs, setFormateurs] = useState(INITIAL_FORMATEURS)
+  const [formateurs, setFormateurs] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   
   // Modals
   const [showAddModal, setShowAddModal] = useState(false)
-  const [selectedFormateur, setSelectedFormateur] = useState<typeof INITIAL_FORMATEURS[0] | null>(null)
+  const [selectedFormateur, setSelectedFormateur] = useState<any | null>(null)
 
   // Add form state
   const [newNom, setNewNom] = useState('')
+  const [newPrenom, setNewPrenom] = useState('')
   const [newSpec, setNewSpec] = useState('')
   const [newTaux, setNewTaux] = useState(120)
   const [newRole, setNewRole] = useState<PersonnelFonction>('formateur')
   const [newEmail, setNewEmail] = useState('')
+  const [newTel, setNewTel] = useState('')
   const [newPassword, setNewPassword] = useState('Bienvenue2026!')
   const [formError, setFormError] = useState('')
+
+  useEffect(() => {
+    api.get<any[]>('/director/personnel')
+      .then(items => setFormateurs(items.map(mapPersonnel)))
+      .catch(err => triggerToast(err instanceof Error ? err.message : 'Impossible de charger le personnel.'))
+      .finally(() => setLoading(false))
+  }, [])
 
   const filtered = formateurs.filter(f =>
     (!coordinatorMode || f.role === 'Formateur' || f.role === 'Enseignant') &&
@@ -63,31 +81,27 @@ export default function FormateursPage() {
     setTimeout(() => setToast(null), 3000)
   }
 
-  const handleAddFormateur = (e: React.FormEvent) => {
+  const handleAddFormateur = async (e: React.FormEvent) => {
     e.preventDefault()
     setFormError('')
-    const roleLabel = newRole.charAt(0).toUpperCase() + newRole.slice(1)
-    const newEntry = {
-      id: Date.now(),
-      nom: newNom,
-      role: roleLabel,
-      specialite: newSpec || 'Général',
-      groupes: newRole === 'commercial' ? 0 : 1,
-      sessions: 0,
-      taux: Number(newTaux) || 120,
-      note: 5.0,
-      email: newEmail,
-      tel: '06 60 00 00 00'
-    }
     try {
-      createAccount({ nom: newNom, email: newEmail, password: newPassword, role: 'personnel', personnelFonction: newRole })
-      setFormateurs([newEntry, ...formateurs])
+      const [lastName, ...firstParts] = newNom.trim().split(' ')
+      const prenom = newPrenom.trim() || firstParts.join(' ') || lastName
+      const nom = newPrenom.trim() ? lastName : (firstParts.join(' ') || lastName)
+      const created = await api.post<any>('/director/personnel', {
+        nom: lastName,
+        prenom: prenom,
+        email: newEmail,
+        password: newPassword,
+        fonction: newRole,
+        telephone: newTel || null,
+        specialite: newSpec || null,
+        taux_horaire: Number(newTaux) || 0,
+      })
+      setFormateurs(prev => [mapPersonnel(created), ...prev])
       setShowAddModal(false)
-      triggerToast(`${roleLabel} "${newNom}" ajouté et compte créé avec succès !`)
-      setNewNom('')
-      setNewSpec('')
-      setNewEmail('')
-      setNewPassword('Bienvenue2026!')
+      triggerToast(`${newRole.charAt(0).toUpperCase() + newRole.slice(1)} "${newNom}" ajouté et compte créé avec succès !`)
+      setNewNom(''); setNewPrenom(''); setNewSpec(''); setNewEmail(''); setNewTel(''); setNewPassword('Bienvenue2026!')
     } catch (error) {
       setFormError(error instanceof Error ? error.message : 'Impossible de créer le compte.')
     }
@@ -266,14 +280,25 @@ export default function FormateursPage() {
               </div>
 
               <div style={{ marginBottom: 14 }}>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 4 }}>Nom complet</label>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 4 }}>Prénom</label>
                 <input
                   type="text"
-                  placeholder="Ex: Tariq El Amrani"
+                  placeholder="Ex: Tariq"
+                  value={newPrenom}
+                  onChange={e => setNewPrenom(e.target.value)}
+                  required
+                  style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, boxSizing: 'border-box' }}
+                />
+              </div>
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 4 }}>Nom</label>
+                <input
+                  type="text"
+                  placeholder="Ex: El Amrani"
                   value={newNom}
                   onChange={e => setNewNom(e.target.value)}
                   required
-                  style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13 }}
+                  style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, boxSizing: 'border-box' }}
                 />
               </div>
 
@@ -292,23 +317,23 @@ export default function FormateursPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 4 }}>Adresse e-mail</label>
-                  <input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="nom@centre.ma" required style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13 }} />
+                  <input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="nom@centre.ma" required style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, boxSizing: 'border-box' }} />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 4 }}>Mot de passe temporaire</label>
-                  <input type="text" value={newPassword} onChange={e => setNewPassword(e.target.value)} minLength={8} required style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13 }} />
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 4 }}>Téléphone</label>
+                  <input type="tel" value={newTel} onChange={e => setNewTel(e.target.value)} placeholder="06 00 00 00 00" style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, boxSizing: 'border-box' }} />
                 </div>
               </div>
 
-              <div style={{ marginBottom: 20 }}>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 4 }}>Taux horaire (DH / h)</label>
-                <input
-                  type="number"
-                  value={newTaux}
-                  onChange={e => setNewTaux(Number(e.target.value))}
-                  required
-                  style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13 }}
-                />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 4 }}>Mot de passe temporaire</label>
+                  <input type="text" value={newPassword} onChange={e => setNewPassword(e.target.value)} minLength={8} required style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, boxSizing: 'border-box' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 4 }}>Taux horaire (DH / h)</label>
+                  <input type="number" value={newTaux} onChange={e => setNewTaux(Number(e.target.value))} style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, boxSizing: 'border-box' }} />
+                </div>
               </div>
 
               {formError && <div className="auth-error" style={{ marginBottom: 14 }}>{formError}</div>}

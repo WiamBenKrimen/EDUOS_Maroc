@@ -2,6 +2,7 @@ import cors from '@fastify/cors'
 import Fastify from 'fastify'
 import { env } from './config/env.js'
 import { authRoutes } from './modules/auth/auth.routes.js'
+import { directorRoutes } from './modules/director/director.routes.js'
 import { healthRoutes } from './modules/health/health.routes.js'
 import { personnelRoutes } from './modules/personnel/personnel.routes.js'
 import { authPlugin } from './plugins/auth.js'
@@ -13,10 +14,13 @@ export async function buildApp() {
   })
 
   await app.register(cors, { origin: env.CORS_ORIGIN, credentials: true })
-  await app.register(authPlugin)
+  // L'authentification doit être enregistrée sur l'instance racine afin que
+  // les routes métiers puissent utiliser `app.authenticate`.
+  await authPlugin(app, {})
   await app.register(healthRoutes, { prefix: '/api/health' })
   await app.register(authRoutes, { prefix: '/api/auth' })
   await app.register(personnelRoutes, { prefix: '/api/personnel' })
+  await app.register(directorRoutes, { prefix: '/api/director' })
 
   app.setNotFoundHandler((_request, reply) => {
     void reply.code(404).send({ message: 'Route introuvable.' })

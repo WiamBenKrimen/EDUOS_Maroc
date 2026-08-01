@@ -361,6 +361,16 @@ CREATE TABLE resource_progress (
   UNIQUE (resource_id, participant_id)
 );
 
+CREATE TABLE google_drive_connections (
+  centre_id uuid PRIMARY KEY REFERENCES centres(id) ON DELETE CASCADE,
+  refresh_token bytea NOT NULL,
+  folder_id text NOT NULL,
+  account_email citext,
+  connected_by uuid REFERENCES users(id) ON DELETE SET NULL,
+  connected_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
 CREATE TABLE evaluations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   cohorte_id uuid NOT NULL REFERENCES cohortes(id) ON DELETE CASCADE,
@@ -728,12 +738,16 @@ LANGUAGE plpgsql
 AS $$
 DECLARE
   assigned_operator uuid;
+  assigned_instructor_user uuid;
 BEGIN
-  SELECT personnel_id INTO assigned_operator
-  FROM seances
-  WHERE id = NEW.seance_id;
+  SELECT s.personnel_id, iv.user_id
+    INTO assigned_operator, assigned_instructor_user
+  FROM seances s
+  LEFT JOIN intervenants iv ON iv.id = s.intervenant_id
+  WHERE s.id = NEW.seance_id;
 
-  IF assigned_operator IS NULL OR assigned_operator <> NEW.personnel_id THEN
+  IF NEW.personnel_id IS DISTINCT FROM assigned_operator
+     AND NEW.personnel_id IS DISTINCT FROM assigned_instructor_user THEN
     RAISE EXCEPTION 'change request operator must be assigned to the session';
   END IF;
 

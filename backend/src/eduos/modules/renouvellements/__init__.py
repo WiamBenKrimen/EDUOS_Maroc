@@ -1,0 +1,1 @@
+"""Renouvellements des inscriptions."""

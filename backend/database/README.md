@@ -1,6 +1,8 @@
 # Base PostgreSQL EDUOS
 
-Ce dossier couvre l’administration EDUOS, les centres, le **directeur**, le **personnel** et le **participant**. Le schéma est indépendant du framework backend et doit être utilisé par la future API Python FastAPI.
+Ce dossier couvre l’administration EDUOS, les centres, le **directeur**, le
+**personnel** et le **participant**. Le schéma PostgreSQL est utilisé par la
+migration Alembic initiale du backend FastAPI.
 
 Le personnel possède une fonction métier : **coordinateur**, **commercial**, **formateur** ou **enseignant**. Le directeur cumule et supervise toutes leurs permissions.
 
@@ -8,10 +10,11 @@ Le schéma cible **PostgreSQL 15 ou supérieur** (`UNIQUE NULLS NOT DISTINCT`) e
 
 ## Installation
 
-```bash
-createdb eduos
-psql -d eduos -f backend/database/schema.sql
-psql -d eduos -f backend/database/seed.sql
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
+alembic upgrade head
+python scripts\seed.py
 ```
 
 Le seeder peut être rejoué en développement : il vide toutes les tables avant les insertions. **Ne jamais l’exécuter sur une base de production.**

@@ -1,0 +1,1 @@
+"""Présences des participants."""

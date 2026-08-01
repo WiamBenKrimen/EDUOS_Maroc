@@ -7,17 +7,6 @@ const NAVY = '#0F2347'
 const BLUE = '#1B3A6B'
 const GOLD = '#D97706'
 
-const INITIAL_PROSPECTS = [
-  { id: 1, nom: 'Yasmine Ait Ouali', formation: 'Anglais B1', contact: '14 juil. 2025', telephone: '06 61 12 34 56', email: 'y.aitouali@gmail.com', statut: 'Nouveau', color: '#0284C7', bg: '#EBF5FF' },
-  { id: 2, nom: 'Mehdi Bensouda', formation: 'Espagnol débutant', contact: '12 juil. 2025', telephone: '06 62 45 67 89', email: 'm.bensouda@gmail.com', statut: 'En cours', color: GOLD, bg: '#FEF3C7' },
-  { id: 3, nom: 'Nour El Houda Fassi', formation: 'Français B2', contact: '10 juil. 2025', telephone: '06 63 78 90 12', email: 'n.fassi@gmail.com', statut: 'Inscrit', color: '#059669', bg: '#ECFDF5' },
-  { id: 4, nom: 'Amine Rachidi', formation: 'Gestion de projet', contact: '08 juil. 2025', telephone: '06 64 23 45 67', email: 'a.rachidi@gmail.com', statut: 'En cours', color: GOLD, bg: '#FEF3C7' },
-  { id: 5, nom: 'Sara El Ouafi', formation: 'Marketing digital', contact: '05 juil. 2025', telephone: '06 65 56 78 90', email: 's.ouafi@gmail.com', statut: 'Inscrit', color: '#059669', bg: '#ECFDF5' },
-  { id: 6, nom: 'Khalid Mansouri', formation: 'Comptabilité', contact: '02 juil. 2025', telephone: '06 66 89 01 23', email: 'k.mansouri@gmail.com', statut: 'Perdu', color: '#DC2626', bg: '#FEE2E2' },
-  { id: 7, nom: 'Fatima Benali', formation: 'Anglais C1', contact: '28 juin 2025', telephone: '06 67 90 12 34', email: 'f.benali@gmail.com', statut: 'Nouveau', color: '#0284C7', bg: '#EBF5FF' },
-  { id: 8, nom: 'Omar Tahiri', formation: 'Informatique bureautique', contact: '25 juin 2025', telephone: '06 68 01 23 45', email: 'o.tahiri@gmail.com', statut: 'En cours', color: GOLD, bg: '#FEF3C7' },
-]
-
 function mapProspect(item: any) {
   const styles: Record<string, [string, string, string]> = {
     nouveau: ['Nouveau', '#0284C7', '#EBF5FF'], en_cours: ['En cours', GOLD, '#FEF3C7'],

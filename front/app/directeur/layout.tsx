@@ -2,8 +2,11 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ReactNode, useState } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 import LogoutButton from '../logout-button'
+import { api } from '../../lib/api-client'
+import { getUser } from '../../lib/auth'
+import type { User } from '../../lib/auth'
 
 const navItems = [
   {
@@ -108,7 +111,21 @@ export default function DirecteurLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [showNotifs, setShowNotifs] = useState(false)
-  const [unreadNotifs, setUnreadNotifs] = useState(4)
+  const [notifications, setNotifications] = useState<Array<{ id: string; titre: string; message: string; read_at: string | null }>>([])
+  const [user, setCurrentUser] = useState<User | null>(null)
+  const unreadNotifs = notifications.filter(item => !item.read_at).length
+
+  useEffect(() => {
+    setCurrentUser(getUser())
+    api.get<Array<{ id: string; titre: string; message: string; read_at: string | null }>>('/director/notifications')
+      .then(setNotifications)
+      .catch(() => setNotifications([]))
+  }, [])
+
+  async function markAllRead() {
+    await api.patch('/director/notifications/read-all', {})
+    setNotifications(current => current.map(item => ({ ...item, read_at: item.read_at ?? new Date().toISOString() })))
+  }
 
   function isActive(item: typeof navItems[0]) {
     if (item.exact) return pathname === item.href
@@ -150,10 +167,10 @@ export default function DirecteurLayout({ children }: { children: ReactNode }) {
         {/* Footer User */}
         <div className="dir-sidebar-footer">
           <div className="dir-footer-user-card">
-            <div className="dir-footer-avatar">AB</div>
+            <div className="dir-footer-avatar">{user?.nom?.split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase() || 'DR'}</div>
             <div className="dir-user-info">
-              <strong>Ahmed Bennani</strong>
-              <span>Directeur Général</span>
+              <strong>{user?.nom || 'Direction'}</strong>
+              <span>Directeur</span>
             </div>
           </div>
           <LogoutButton />
@@ -196,25 +213,18 @@ export default function DirecteurLayout({ children }: { children: ReactNode }) {
                   <div style={{ padding: '14px 18px', background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, fontSize: '.84rem', color: '#0F2347' }}>Notifications Direction</span>
                     <button
-                      onClick={() => setUnreadNotifs(0)}
+                      onClick={() => void markAllRead()}
                       style={{ fontSize: '.72rem', color: '#1B3A6B', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}
                     >
                       Tout marquer lu
                     </button>
                   </div>
                   <div style={{ maxHeight: 280, overflowY: 'auto' }}>
-                    <div style={{ padding: '12px 18px', borderBottom: '1px solid #F1F5F9' }}>
-                      <div style={{ fontSize: '.8rem', fontWeight: 700, color: '#0F2347' }}>Rapport financier Juin validé</div>
-                      <div style={{ fontSize: '.72rem', color: '#64748B', marginTop: 2 }}>CA total encaissé : 84 200 DH (+8.4%)</div>
-                    </div>
-                    <div style={{ padding: '12px 18px', borderBottom: '1px solid #F1F5F9' }}>
-                      <div style={{ fontSize: '.8rem', fontWeight: 700, color: '#0F2347' }}>5 renouvellements en attente</div>
-                      <div style={{ fontSize: '.72rem', color: '#64748B', marginTop: 2 }}>Relances automatiques envoyées par SMS</div>
-                    </div>
-                    <div style={{ padding: '12px 18px', borderBottom: '1px solid #F1F5F9' }}>
-                      <div style={{ fontSize: '.8rem', fontWeight: 700, color: '#0F2347' }}>Nouveau prospect qualifié</div>
-                      <div style={{ fontSize: '.72rem', color: '#64748B', marginTop: 2 }}>Sami Mansouri (Demande Formation B2)</div>
-                    </div>
+                    {!notifications.length && <div style={{ padding: '18px', color: '#64748B', fontSize: '.78rem' }}>Aucune notification.</div>}
+                    {notifications.map(notification => <div key={notification.id} style={{ padding: '12px 18px', borderBottom: '1px solid #F1F5F9', background: notification.read_at ? '#FFF' : '#F8FAFC' }}>
+                      <div style={{ fontSize: '.8rem', fontWeight: 700, color: '#0F2347' }}>{notification.titre}</div>
+                      <div style={{ fontSize: '.72rem', color: '#64748B', marginTop: 2 }}>{notification.message}</div>
+                    </div>)}
                   </div>
                 </div>
               )}
@@ -222,10 +232,10 @@ export default function DirecteurLayout({ children }: { children: ReactNode }) {
 
             {/* Profile Pill */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingLeft: 8, borderLeft: '1px solid #E2E8F0' }}>
-              <div className="dir-user-avatar" style={{ width: 36, height: 36 }}>AB</div>
+              <div className="dir-user-avatar" style={{ width: 36, height: 36 }}>{user?.nom?.split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase() || 'DR'}</div>
               <div className="dir-user-info">
-                <strong>Ahmed Bennani</strong>
-                <span>Directeur Général</span>
+                <strong>{user?.nom || 'Direction'}</strong>
+                <span>Directeur</span>
               </div>
             </div>
           </div>

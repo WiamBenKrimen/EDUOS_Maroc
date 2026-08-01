@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { getUser, homeForRole, type Role } from '../lib/auth'
+import { getUser, homeForRole, type PersonnelFonction, type Role } from '../lib/auth'
 
 const ROLE_PREFIXES: Record<Role, string> = {
   admin: '/admin',
@@ -16,6 +16,9 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const [ready, setReady] = useState(false)
   const requiredRole = (Object.entries(ROLE_PREFIXES).find(([, prefix]) => pathname.startsWith(prefix))?.[0] ?? null) as Role | null
+  const personnelFunctions: PersonnelFonction[] = ['coordinateur', 'commercial', 'formateur', 'enseignant']
+  const pathFunction = pathname.split('/')[2] as PersonnelFonction | undefined
+  const requiredFunction = requiredRole === 'personnel' && pathFunction && personnelFunctions.includes(pathFunction) ? pathFunction : null
 
   useEffect(() => {
     const user = getUser()
@@ -28,12 +31,16 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
       router.replace(homeForRole(user!.role))
       return
     }
+    if (requiredFunction && user?.personnelFonction !== requiredFunction) {
+      router.replace(homeForRole(user!.role))
+      return
+    }
     if ((pathname === '/login' || pathname === '/register') && user) {
       router.replace(homeForRole(user.role))
       return
     }
     setReady(true)
-  }, [pathname, requiredRole, router])
+  }, [pathname, requiredFunction, requiredRole, router])
 
   if (!ready) {
     return (

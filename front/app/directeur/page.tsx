@@ -19,11 +19,13 @@ const recommendations = [
 
 const months = [['Fév', 48], ['Mar', 62], ['Avr', 55], ['Mai', 75], ['Juin', 67], ['Juil', 88]] as const
 
-const sessions = [
-  { day: 'Aujourd’hui', time: '09:00', name: 'Anglais B2', trainer: 'Karim Alaoui', count: '18 / 20' },
-  { day: 'Aujourd’hui', time: '14:30', name: 'Espagnol débutant', trainer: 'Omar El Fassi', count: '11 / 15' },
-  { day: 'Demain', time: '18:00', name: 'Français A2 Soir', trainer: 'Leila Bennouna', count: '14 / 18' },
-]
+type UpcomingSession = {
+  id: string
+  titre: string
+  starts_at: string
+  cohorte: string
+  intervenant: string | null
+}
 
 function DashboardIcon({ name }: { name: string }) {
   const paths: Record<string, React.ReactNode> = {
@@ -37,6 +39,8 @@ function DashboardIcon({ name }: { name: string }) {
 
 export default function DirecteurDashboard() {
   const [kpis, setKpis] = useState(STATIC_KPIS)
+  const [sessions, setSessions] = useState<UpcomingSession[]>([])
+  const [dashboardError, setDashboardError] = useState('')
   const [toast, setToast] = useState('')
   const [hiddenRecommendations, setHiddenRecommendations] = useState<string[]>([])
   const [actions, setActions] = useState(recommendations)
@@ -47,16 +51,17 @@ export default function DirecteurDashboard() {
   const [actionDueDate, setActionDueDate] = useState('')
 
   useEffect(() => {
-    api.get<{ eleves_actifs: number; taux_presence: number; ca_encaisse: number; paiements_retard: number }>('/director/dashboard')
-      .then((data: { eleves_actifs: number; taux_presence: number; ca_encaisse: number; paiements_retard: number }) => {
+    api.get<{ eleves_actifs: number; taux_presence: number; ca_encaisse: number; paiements_retard: number; upcoming_sessions: UpcomingSession[] }>('/director/dashboard')
+      .then(data => {
         setKpis([
           { label: 'Élèves actifs', value: String(data.eleves_actifs), trend: 'Total confirmés', icon: 'students' },
           { label: 'Taux de présence', value: `${data.taux_presence} %`, trend: 'Toutes séances', icon: 'attendance' },
           { label: 'CA encaissé', value: `${Number(data.ca_encaisse).toLocaleString('fr-FR')} DH`, trend: 'Mois en cours', icon: 'revenue' },
           { label: 'Paiements en retard', value: String(data.paiements_retard), trend: 'Factures échuées', icon: 'warning', alert: data.paiements_retard > 0 },
         ])
+        setSessions(data.upcoming_sessions ?? [])
       })
-      .catch(() => {/* silently keep static */})
+      .catch(error => setDashboardError(error instanceof Error ? error.message : 'Tableau de bord indisponible.'))
   }, [])
 
   function notify(message: string) {
@@ -112,6 +117,7 @@ export default function DirecteurDashboard() {
   return (
     <div className="director-v2">
       {toast && <div className="director-v2-toast" role="status">{toast}</div>}
+      {dashboardError && <div className="card card-p" role="alert" style={{ color: '#B91C1C', marginBottom: 16 }}>{dashboardError}</div>}
 
       <header className="director-v2-heading">
         <div>
@@ -179,13 +185,14 @@ export default function DirecteurDashboard() {
           <header><div><h2>Planning</h2><p>Prochaines sessions</p></div><Link href="/directeur/cohortes">Toutes les cohortes</Link></header>
           <div>
             {sessions.map(session => (
-              <Link href="/directeur/cohortes" key={`${session.name}-${session.time}`}>
-                <time><small>{session.day}</small><strong>{session.time}</strong></time>
+              <Link href="/directeur/planning" key={session.id}>
+                <time><small>{new Intl.DateTimeFormat('fr-FR', { weekday: 'short' }).format(new Date(session.starts_at))}</small><strong>{new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' }).format(new Date(session.starts_at))}</strong></time>
                 <i/>
-                <span><strong>{session.name}</strong><small>{session.trainer}</small></span>
-                <b>{session.count}</b>
+                <span><strong>{session.cohorte || session.titre}</strong><small>{session.intervenant || 'Non affecté'}</small></span>
+                <b>{session.titre}</b>
               </Link>
             ))}
+            {!sessions.length && <div className="director-v2-empty"><strong>Aucune séance à venir</strong><span>Le planning est synchronisé avec le backend.</span></div>}
           </div>
         </article>
 

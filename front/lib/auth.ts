@@ -103,7 +103,8 @@ export async function login(email: string, password: string): Promise<User> {
     setUser(user)
     return user
   } catch (error) {
-    if (!(error instanceof TypeError)) throw error
+    const demoFallbackEnabled = process.env.NEXT_PUBLIC_ENABLE_DEMO_AUTH === 'true'
+    if (!(error instanceof TypeError) || !demoFallbackEnabled) throw error
 
     const overrides = JSON.parse(localStorage.getItem(PASSWORDS_KEY) ?? '{}') as Record<string, string>
     const account = getAccounts().find(item =>

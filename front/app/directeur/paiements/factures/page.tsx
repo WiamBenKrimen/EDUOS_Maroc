@@ -1,99 +1,118 @@
 'use client'
-import { useMemo, useState } from 'react'
+
+import { useEffect, useMemo, useState } from 'react'
+import { api } from '../../../../lib/api-client'
 import SearchFilterBar from '../../search-filter-bar'
 
-const FACTURES = [
-  { num: 'FAC-2025-0142', apprenant: 'Ahmed Cherkaoui', formation: 'Anglais B1', montant: '450 DH', date: '22 juil. 2025', statut: 'Payée' },
-  { num: 'FAC-2025-0141', apprenant: 'Fatima Zahra El Idrissi', formation: 'Français B2', montant: '680 DH', date: '21 juil. 2025', statut: 'Payée' },
-  { num: 'FAC-2025-0140', apprenant: 'Sara Benali', formation: 'Gestion de projet', montant: '750 DH', date: '18 juil. 2025', statut: 'En attente' },
-  { num: 'FAC-2025-0139', apprenant: 'Omar Tahiri', formation: 'Marketing digital', montant: '580 DH', date: '15 juil. 2025', statut: 'En retard' },
-  { num: 'FAC-2025-0138', apprenant: 'Nour El Houda Fassi', formation: 'Français A2', montant: '380 DH', date: '10 juil. 2025', statut: 'Payée' },
-  { num: 'FAC-2025-0137', apprenant: 'Amine Rachidi', formation: 'Gestion de projet', montant: '750 DH', date: '08 juil. 2025', statut: 'Payée' },
-  { num: 'FAC-2025-0136', apprenant: 'Karim Ouali', formation: 'Anglais B2', montant: '520 DH', date: '05 juil. 2025', statut: 'En attente' },
-  { num: 'FAC-2025-0135', apprenant: 'Yasmine Ait Ouali', formation: 'Espagnol débutant', montant: '420 DH', date: '01 juil. 2025', statut: 'En retard' },
-]
+type Invoice = {
+  id: string
+  numero: string
+  participant_nom: string
+  cohorte_nom: string
+  montant_ttc: number | string
+  date_echeance: string
+  facture_statut: string
+}
 
-const STATUS_MAP: Record<string, { color: string; bg: string }> = {
-  'Payée': { color: '#059669', bg: 'rgba(5,150,105,.08)' },
-  'En attente': { color: '#C9922A', bg: 'rgba(201,146,42,.1)' },
-  'En retard': { color: '#DC2626', bg: 'rgba(220,38,38,.07)' },
+const labels: Record<string, string> = {
+  payee: 'Payée',
+  partiellement_payee: 'Partiellement payée',
+  en_attente: 'En attente',
+  en_retard: 'En retard',
+  annulee: 'Annulée',
+  brouillon: 'Brouillon',
+  emise: 'Émise',
 }
 
 export default function FacturesPage() {
+  const [invoices, setInvoices] = useState<Invoice[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedStatus, setSelectedStatus] = useState('Toutes')
-  const [selectedMonth, setSelectedMonth] = useState('Toutes les periodes')
-  const filteredFactures = useMemo(() => {
+
+  useEffect(() => {
+    api.get<Invoice[]>('/director/paiements')
+      .then(setInvoices)
+      .catch(reason => setError(reason instanceof Error ? reason.message : 'Chargement impossible.'))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const filtered = useMemo(() => {
     const query = searchQuery.trim().toLocaleLowerCase('fr-FR')
-    return FACTURES.filter(facture => {
-      const matchesQuery = !query || [facture.num, facture.apprenant, facture.formation, facture.montant].some(value => value.toLocaleLowerCase('fr-FR').includes(query))
-      const matchesStatus = selectedStatus === 'Toutes' || facture.statut === selectedStatus
-      const matchesMonth = selectedMonth === 'Toutes les periodes' || facture.date.includes(selectedMonth)
-      return matchesQuery && matchesStatus && matchesMonth
+    return invoices.filter(invoice => {
+      const status = labels[invoice.facture_statut] ?? invoice.facture_statut
+      const matchesQuery = !query || [
+        invoice.numero,
+        invoice.participant_nom,
+        invoice.cohorte_nom,
+      ].some(value => String(value ?? '').toLocaleLowerCase('fr-FR').includes(query))
+      return matchesQuery && (selectedStatus === 'Toutes' || status === selectedStatus)
     })
-  }, [searchQuery, selectedStatus, selectedMonth])
+  }, [invoices, searchQuery, selectedStatus])
+
+  function exportCsv() {
+    const rows = [
+      ['Numero', 'Apprenant', 'Formation', 'Montant TTC', 'Echeance', 'Statut'],
+      ...filtered.map(item => [
+        item.numero,
+        item.participant_nom,
+        item.cohorte_nom,
+        String(item.montant_ttc),
+        item.date_echeance,
+        labels[item.facture_statut] ?? item.facture_statut,
+      ]),
+    ]
+    const csv = rows.map(row => row.map(value => `"${String(value ?? '').replaceAll('"', '""')}"`).join(';')).join('\n')
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = 'factures-eduos.csv'
+    anchor.click()
+    URL.revokeObjectURL(url)
+  }
 
   return (
-    <div style={{ padding: '36px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 }}>
-        <div>
-          <nav style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: '.78rem', color: '#94a3b8', marginBottom: 8 }}>
-            <span>Paiements</span><span style={{ margin: '0 6px' }}>›</span><span style={{ color: '#1B3A6B' }}>Factures</span>
-          </nav>
-          <h1 style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 900, fontSize: '1.6rem', color: '#1a1823', marginBottom: 4 }}>Factures</h1>
-          <p style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: '.88rem', color: '#64748b' }}>Historique complet de toutes les factures</p>
+    <div>
+      <header className="page-header">
+        <div className="page-header-left">
+          <div className="page-breadcrumb"><span>Paiements</span><span className="page-breadcrumb-sep">›</span><span>Factures</span></div>
+          <h1 className="page-title">Factures</h1>
+          <p className="page-subtitle">Données de facturation synchronisées avec FastAPI.</p>
         </div>
-        <button style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '11px 20px', background: '#1B3A6B', color: '#fff', border: 'none', borderRadius: 10, fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 700, fontSize: '.85rem', cursor: 'pointer' }}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Exporter CSV
-        </button>
-      </div>
+        <button className="btn btn-primary btn-sm" onClick={exportCsv} disabled={!filtered.length}>Exporter CSV</button>
+      </header>
 
       <SearchFilterBar
         value={searchQuery}
         onChange={setSearchQuery}
         placeholder="Rechercher par numéro, apprenant ou formation..."
-        resultCount={filteredFactures.length}
-        filters={[
-          { label: 'Statut', value: selectedStatus, options: ['Toutes', 'Payée', 'En attente', 'En retard'], onChange: setSelectedStatus },
-          { label: 'Période', value: selectedMonth, options: ['Toutes les periodes', 'juil. 2025', 'juin 2025', 'mai 2025'], onChange: setSelectedMonth },
-        ]}
+        resultCount={filtered.length}
+        filters={[{
+          label: 'Statut',
+          value: selectedStatus,
+          options: ['Toutes', 'Payée', 'Partiellement payée', 'En attente', 'En retard', 'Annulée', 'Brouillon', 'Émise'],
+          onChange: setSelectedStatus,
+        }]}
       />
 
-      <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2D9CC', overflow: 'hidden', boxShadow: '0 2px 12px rgba(27,58,107,.04)' }}>
+      {error && <div className="card card-p" role="alert" style={{ color: '#B91C1C', marginBottom: 16 }}>{error}</div>}
+      <div className="card" style={{ overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ background: '#faf8f5', borderBottom: '1px solid #E2D9CC' }}>
-              {['N° Facture', 'Apprenant', 'Formation', 'Montant', 'Date', 'Statut', 'Actions'].map(h => (
-                <th key={h} style={{ padding: '12px 20px', textAlign: 'left', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 700, fontSize: '.72rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '.05em' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
+          <thead><tr>{['N° Facture', 'Apprenant', 'Formation', 'Montant', 'Échéance', 'Statut'].map(label => <th key={label} style={{ padding: '12px 18px', textAlign: 'left' }}>{label}</th>)}</tr></thead>
           <tbody>
-            {filteredFactures.length === 0 && <tr><td colSpan={7} style={{ padding: '32px 20px', textAlign: 'center', color: '#64748b', fontSize: '.85rem' }}>Aucune facture ne correspond a votre recherche.</td></tr>}
-            {filteredFactures.map((f, i) => {
-              const { color, bg } = STATUS_MAP[f.statut] ?? { color: '#64748b', bg: '#f1f5f9' }
-              return (
-                <tr key={f.num} style={{ borderBottom: i < filteredFactures.length - 1 ? '1px solid #f1ede8' : 'none', transition: 'background .15s' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = '#faf8f5')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                  <td style={{ padding: '13px 20px', fontFamily: "'Inter', system-ui, sans-serif", fontSize: '.82rem', color: '#1B3A6B', fontWeight: 600 }}>{f.num}</td>
-                  <td style={{ padding: '13px 20px', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 600, fontSize: '.85rem', color: '#1a1823' }}>{f.apprenant}</td>
-                  <td style={{ padding: '13px 20px', fontFamily: "'Inter', system-ui, sans-serif", fontSize: '.83rem', color: '#64748b' }}>{f.formation}</td>
-                  <td style={{ padding: '13px 20px', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 700, fontSize: '.88rem', color: '#1a1823' }}>{f.montant}</td>
-                  <td style={{ padding: '13px 20px', fontFamily: "'Inter', system-ui, sans-serif", fontSize: '.82rem', color: '#64748b' }}>{f.date}</td>
-                  <td style={{ padding: '13px 20px' }}>
-                    <span style={{ display: 'inline-flex', padding: '3px 11px', borderRadius: 99, background: bg, color, fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 700, fontSize: '.72rem' }}>{f.statut}</span>
-                  </td>
-                  <td style={{ padding: '13px 20px' }}>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <button style={{ padding: '5px 10px', borderRadius: 7, border: '1px solid #E2D9CC', background: '#fff', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 600, fontSize: '.72rem', color: '#1B3A6B', cursor: 'pointer' }}>PDF</button>
-                      {f.statut !== 'Payée' && <button style={{ padding: '5px 10px', borderRadius: 7, border: '1px solid #DC2626', background: '#fff', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 600, fontSize: '.72rem', color: '#DC2626', cursor: 'pointer' }}>Relancer</button>}
-                    </div>
-                  </td>
-                </tr>
-              )
-            })}
+            {loading && <tr><td colSpan={6} style={{ padding: 28, textAlign: 'center' }}>Chargement depuis FastAPI…</td></tr>}
+            {!loading && !filtered.length && <tr><td colSpan={6} style={{ padding: 28, textAlign: 'center', color: '#64748B' }}>Aucune facture trouvée.</td></tr>}
+            {filtered.map(invoice => (
+              <tr key={invoice.id} style={{ borderTop: '1px solid #EEF2F7' }}>
+                <td style={{ padding: '13px 18px', fontWeight: 700 }}>{invoice.numero}</td>
+                <td style={{ padding: '13px 18px' }}>{invoice.participant_nom}</td>
+                <td style={{ padding: '13px 18px' }}>{invoice.cohorte_nom}</td>
+                <td style={{ padding: '13px 18px', fontWeight: 800 }}>{Number(invoice.montant_ttc).toLocaleString('fr-MA')} DH</td>
+                <td style={{ padding: '13px 18px' }}>{new Intl.DateTimeFormat('fr-FR').format(new Date(invoice.date_echeance))}</td>
+                <td style={{ padding: '13px 18px' }}><span className="badge badge-navy">{labels[invoice.facture_statut] ?? invoice.facture_statut}</span></td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>

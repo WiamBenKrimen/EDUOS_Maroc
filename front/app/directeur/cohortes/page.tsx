@@ -13,6 +13,7 @@ function mapCohorte(item: any) {
   return {
     id: item.id,
     formation_id: item.formation_id ?? '',
+    intervenant_id: item.intervenant_id ?? '',
     name: item.nom,
     formateur: item.formateur ?? 'Non affecté',
     eleves: Number(item.inscrits ?? 0),
@@ -20,6 +21,7 @@ function mapCohorte(item: any) {
     sessions: item.salle ?? '',
     debut,
     statut: item.statut,
+    participants: Array.isArray(item.participants) ? item.participants : [],
   }
 }
 
@@ -33,6 +35,7 @@ function fillColor(pct: number) {
 export default function CohortesPage() {
   const [cohortes, setCohortes] = useState<any[]>([])
   const [formations, setFormations] = useState<any[]>([])
+  const [intervenants, setIntervenants] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -45,6 +48,7 @@ export default function CohortesPage() {
   // Add Cohort state
   const [newName, setNewName] = useState('')
   const [newFormationId, setNewFormationId] = useState('')
+  const [newIntervenantId, setNewIntervenantId] = useState('')
   const [newMax, setNewMax] = useState(20)
   const [newDateDebut, setNewDateDebut] = useState('')
   const [newDateFin, setNewDateFin] = useState('')
@@ -55,9 +59,11 @@ export default function CohortesPage() {
     Promise.all([
       api.get<any[]>('/director/cohortes'),
       api.get<any[]>('/director/formations'),
-    ]).then(([cohs, forms]) => {
+      api.get<any[]>('/director/personnel'),
+    ]).then(([cohs, forms, personnel]) => {
       setCohortes(cohs.map(mapCohorte))
       setFormations(forms)
+      setIntervenants(personnel.filter(item => ['formateur', 'enseignant'].includes(item.personnel_fonction) && item.intervenant_id))
     }).catch(err => triggerToast(err instanceof Error ? err.message : 'Impossible de charger les cohortes.'))
      .finally(() => setLoading(false))
   }, [])
@@ -81,22 +87,33 @@ export default function CohortesPage() {
         date_fin: newDateFin,
         capacite: Number(newMax) || 20,
         salle: newSalle || null,
+        intervenant_id: newIntervenantId || null,
       })
-      setCohortes(prev => [mapCohorte({ ...created, inscrits: 0, formateur: 'Non affecté', formation_id: newFormationId }), ...prev])
+      const assigned = intervenants.find(item => item.intervenant_id === newIntervenantId)
+      setCohortes(prev => [mapCohorte({ ...created, inscrits: 0, formateur: assigned ? `${assigned.prenom} ${assigned.nom}` : 'Non affecté', formation_id: newFormationId }), ...prev])
       setShowAddModal(false)
       triggerToast(`Cohorte "${newName}" créée avec succès !`)
-      setNewName(''); setNewFormationId(''); setNewSalle(''); setNewDateDebut(''); setNewDateFin('')
+      setNewName(''); setNewFormationId(''); setNewIntervenantId(''); setNewSalle(''); setNewDateDebut(''); setNewDateFin('')
     } catch (error) {
       setFormError(error instanceof Error ? error.message : 'Création impossible.')
     }
   }
 
-  const handleEditSubmit = (e: React.FormEvent) => {
+  const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!editCohorte) return
-    setCohortes(prev => prev.map(c => c.id === editCohorte.id ? editCohorte : c))
-    setEditCohorte(null)
-    triggerToast(`Cohorte "${editCohorte.name}" mise à jour !`)
+    try {
+      await api.patch(`/director/cohortes/${editCohorte.id}`, {
+        nom: editCohorte.name,
+        capacite: editCohorte.max,
+        intervenant_id: editCohorte.intervenant_id || null,
+      })
+      setCohortes(prev => prev.map(c => c.id === editCohorte.id ? editCohorte : c))
+      setEditCohorte(null)
+      triggerToast(`Cohorte "${editCohorte.name}" mise à jour dans le backend !`)
+    } catch (error) {
+      triggerToast(error instanceof Error ? error.message : 'Mise à jour impossible.')
+    }
   }
 
   const filtered = cohortes.filter(c => 
@@ -300,6 +317,14 @@ export default function CohortesPage() {
                 </select>
               </div>
 
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 4 }}>Formateur / Enseignant affecté</label>
+                <select value={newIntervenantId} onChange={e => setNewIntervenantId(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, boxSizing: 'border-box', background: '#fff' }}>
+                  <option value="">— Affecter plus tard —</option>
+                  {intervenants.map((item: any) => <option key={item.intervenant_id} value={item.intervenant_id}>{item.prenom} {item.nom} — {item.personnel_fonction}</option>)}
+                </select>
+              </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 4 }}>Date de début</label>
@@ -372,10 +397,10 @@ export default function CohortesPage() {
 
               <h4 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, fontSize: 14, color: NAVY, marginBottom: 10 }}>Apprenants inscrits ({selectedCohorte.eleves})</h4>
               <div style={{ maxHeight: 180, overflowY: 'auto', marginBottom: 20 }}>
-                {['Yasmine Benali', 'Karim Belkadi', 'Amine Mansouri', 'Sara El Ouafi'].map((name, idx) => (
-                  <div key={idx} style={{ padding: '8px 12px', borderBottom: '1px solid #F1F5F9', fontSize: 13, color: NAVY, display: 'flex', justifyContent: 'space-between' }}>
-                    <span>{name}</span>
-                    <span style={{ fontSize: 11, color: '#10B981', fontWeight: 700 }}>Présent à 100%</span>
+                {selectedCohorte.participants.length === 0 && <div style={{ padding: '12px', color: '#64748B', fontSize: 13 }}>Aucun apprenant inscrit.</div>}
+                {selectedCohorte.participants.map((participant: { id: string; nom: string }) => (
+                  <div key={participant.id} style={{ padding: '8px 12px', borderBottom: '1px solid #F1F5F9', fontSize: 13, color: NAVY }}>
+                    <span>{participant.nom}</span>
                   </div>
                 ))}
               </div>
@@ -431,6 +456,14 @@ export default function CohortesPage() {
                   required
                   style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13 }}
                 />
+              </div>
+
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 4 }}>Formateur / Enseignant affecté</label>
+                <select value={editCohorte.intervenant_id} onChange={e => { const assigned = intervenants.find(item => item.intervenant_id === e.target.value); setEditCohorte({ ...editCohorte, intervenant_id: e.target.value, formateur: assigned ? `${assigned.prenom} ${assigned.nom}` : editCohorte.formateur }) }} style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, background: '#fff' }}>
+                  <option value="">— Conserver l’affectation actuelle —</option>
+                  {intervenants.map((item: any) => <option key={item.intervenant_id} value={item.intervenant_id}>{item.prenom} {item.nom} — {item.personnel_fonction}</option>)}
+                </select>
               </div>
 
               <div style={{ display: 'flex', gap: 10 }}>

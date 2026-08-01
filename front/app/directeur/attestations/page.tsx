@@ -1,25 +1,44 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { api } from '../../../lib/api-client'
 
-const STUDENTS_FOR_CERT = [
-  { id: 1, nom: 'Ahmed Cherkaoui', groupe: 'Anglais B1', niveau: 'B1 Cambridge', note: 78, eligible: true },
-  { id: 2, nom: 'Fatima Zahra El Idrissi', groupe: 'Français B2', niveau: 'B2 DELF', note: 85, eligible: true },
-  { id: 3, nom: 'Karim Ouali', groupe: 'Anglais B2', niveau: 'B2 Cambridge', note: 62, eligible: true },
-  { id: 4, nom: 'Sara Benali', groupe: 'Gestion de projet', niveau: 'Attestation de formation', note: 91, eligible: true },
-  { id: 5, nom: 'Omar Tahiri', groupe: 'Marketing digital', niveau: 'Attestation de formation', note: 44, eligible: false },
-  { id: 6, nom: 'Nour El Houda Fassi', groupe: 'Français A2', niveau: 'A2 DELF', note: 73, eligible: true },
-]
+type AttestationStudent = {
+  id: string
+  inscription_id: string
+  nom: string
+  groupe: string
+  niveau: string
+  note: number
+  eligible: boolean
+  generee: boolean
+}
 
 export default function AttestationsPage() {
+  const [students, setStudents] = useState<AttestationStudent[]>([])
+  const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<Set<number>>(new Set())
-  const [previewStudent, setPreviewStudent] = useState<typeof STUDENTS_FOR_CERT[0] | null>(null)
+  const [previewStudent, setPreviewStudent] = useState<any | null>(null)
   const [toastMessage, setToastMessage] = useState('')
   const [showBatchModal, setShowBatchModal] = useState(false)
 
+  useEffect(() => {
+    api.get<any[]>('/director/attestations')
+      .then(items => setStudents(items.map(item => ({
+        ...item,
+        id: String(item.id ?? item.inscription_id),
+        inscription_id: String(item.inscription_id ?? item.id),
+        note: Number(item.note ?? 0),
+        eligible: Boolean(item.eligible),
+        generee: Boolean(item.generee),
+      }))))
+      .catch(error => setToastMessage(error instanceof Error ? error.message : 'Chargement impossible.'))
+      .finally(() => setLoading(false))
+  }, [])
+
   const toggleAll = () => {
-    if (selected.size === STUDENTS_FOR_CERT.filter(s => s.eligible).length) setSelected(new Set())
-    else setSelected(new Set(STUDENTS_FOR_CERT.map((_, i) => i).filter(i => STUDENTS_FOR_CERT[i].eligible)))
+    if (selected.size === students.filter(s => s.eligible).length) setSelected(new Set())
+    else setSelected(new Set(students.map((_, i) => i).filter(i => students[i].eligible)))
   }
 
   const toggle = (i: number) => {
@@ -37,10 +56,18 @@ export default function AttestationsPage() {
     setShowBatchModal(true)
   }
 
-  const confirmBatchGeneration = () => {
-    setShowBatchModal(false)
-    triggerToast(`${selected.size} attestation(s) générée(s) et disponible(s) en PDF !`)
-    setSelected(new Set())
+  const confirmBatchGeneration = async () => {
+    try {
+      const inscriptionIds = [...selected].map(index => students[index]?.inscription_id).filter(Boolean)
+      const result = await api.post<{ generated: number }>('/director/attestations/generate', { inscription_ids: inscriptionIds })
+      setShowBatchModal(false)
+      triggerToast(`${result.generated} attestation(s) générée(s) dans le backend.`)
+      setSelected(new Set())
+      setStudents(current => current.map((student, index) => selected.has(index) ? { ...student, generee: true } : student))
+    } catch (error) {
+      setShowBatchModal(false)
+      triggerToast(error instanceof Error ? error.message : 'Génération impossible.')
+    }
   }
 
   return (
@@ -85,7 +112,7 @@ export default function AttestationsPage() {
             <span className="badge badge-green">Note &gt;= 60</span>
           </div>
           <div className="kpi-value" style={{ marginTop: 8, color: '#059669' }}>
-            {STUDENTS_FOR_CERT.filter(s => s.eligible).length}
+            {students.filter(s => s.eligible).length}
           </div>
         </div>
 
@@ -95,7 +122,7 @@ export default function AttestationsPage() {
             <span className="badge badge-red">Insuffisant</span>
           </div>
           <div className="kpi-value" style={{ marginTop: 8, color: '#DC2626' }}>
-            {STUDENTS_FOR_CERT.filter(s => !s.eligible).length}
+            {students.filter(s => !s.eligible).length}
           </div>
         </div>
 
@@ -115,7 +142,7 @@ export default function AttestationsPage() {
         <div className="row" style={{ padding: '14px 20px', borderBottom: '1px solid #EEF0F4', background: '#F8F9FB' }}>
           <input
             type="checkbox"
-            checked={selected.size === STUDENTS_FOR_CERT.filter(s => s.eligible).length && selected.size > 0}
+            checked={selected.size === students.filter(s => s.eligible).length && selected.size > 0}
             onChange={toggleAll}
             style={{ width: 16, height: 16, cursor: 'pointer' }}
           />
@@ -125,8 +152,10 @@ export default function AttestationsPage() {
         </div>
 
         <div>
-          {STUDENTS_FOR_CERT.map((s, i) => (
-            <div key={s.id} className="list-item card-p" style={{ opacity: s.eligible ? 1 : 0.5 }}>
+          {loading && <div className="card-p" style={{ color: '#64748B', textAlign: 'center' }}>Chargement depuis FastAPI…</div>}
+          {!loading && students.length === 0 && <div className="card-p" style={{ color: '#64748B', textAlign: 'center' }}>Aucun apprenant disponible pour une attestation.</div>}
+          {students.map((s, i) => (
+            <div key={`${s.inscription_id}-${i}`} className="list-item card-p" style={{ opacity: s.eligible ? 1 : 0.5 }}>
               <input
                 type="checkbox"
                 disabled={!s.eligible}

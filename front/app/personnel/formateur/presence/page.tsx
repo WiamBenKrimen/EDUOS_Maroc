@@ -1,1 +1,1 @@
-export { default } from '../../coordinateur/presence/page'
+export { default } from '@/components/teaching/AttendanceView'

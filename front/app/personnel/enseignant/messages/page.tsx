@@ -1,1 +1,1 @@
-export { default } from '../../coordinateur/messages/page'
+export { default } from '@/components/teaching/MessagesView'

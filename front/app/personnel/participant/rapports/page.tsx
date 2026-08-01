@@ -1,37 +1,29 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { api } from '@/lib/api-client'
+import type { ParticipantReport } from '@/lib/participant-types'
 
-const REPORTS=[
- {id:1,month:'Juin',year:'2025',score:78,delta:'+4 pts',attendance:'10/12',rate:83,comment:"Yasmine progresse très bien. Sa compréhension orale s’améliore sensiblement. Il est conseillé de travailler davantage l’expression écrite pour atteindre le niveau B2 cible.",skills:[['Compréhension orale',82],['Expression écrite',65],['Vocabulaire',79],['Grammaire',74]]},
- {id:2,month:'Mai',year:'2025',score:74,delta:'+2 pts',attendance:'11/12',rate:92,comment:"Une progression régulière et une excellente participation. Les efforts en vocabulaire commencent à porter leurs fruits.",skills:[['Compréhension orale',76],['Expression écrite',63],['Vocabulaire',75],['Grammaire',72]]},
- {id:3,month:'Avril',year:'2025',score:72,delta:'+5 pts',attendance:'10/12',rate:83,comment:"Les bases sont solides. Il faut poursuivre les exercices d’expression écrite et maintenir la régularité.",skills:[['Compréhension orale',71],['Expression écrite',60],['Vocabulaire',73],['Grammaire',70]]},
-]
+export default function RapportsPage() {
+  const [reports, setReports] = useState<ParticipantReport[]>([])
+  const [selected, setSelected] = useState<ParticipantReport | null>(null)
+  const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
 
-export default function RapportsPage(){
- const[selected,setSelected]=useState(REPORTS[0]);const[toast,setToast]=useState('')
- const download=(all=false)=>{const data=all?REPORTS.map(r=>`${r.month} ${r.year}: ${r.score}/100`).join('\n'):`Rapport ${selected.month} ${selected.year}\nScore: ${selected.score}/100\nAssiduité: ${selected.rate}%\n\n${selected.comment}`;const url=URL.createObjectURL(new Blob([`EDUOS MAROC — RAPPORT DE SUIVI\n\n${data}`],{type:'text/plain;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download=all?'Rapports_EDUOS.txt':`Rapport_${selected.month}_${selected.year}.txt`;a.click();URL.revokeObjectURL(url);setToast('Votre rapport a été exporté.');window.setTimeout(()=>setToast(''),2500)}
- return <div className="reports-v2">
-  {toast&&<div className="part-toast"><span>✓</span>{toast}</div>}
-  <header className="reports-v2-head"><div><div className="page-breadcrumb"><span>EDUOS</span><span>›</span><span>Rapports</span></div><h1>Rapports de suivi</h1><p>Évaluations pédagogiques · Anglais B2 · Formateur K. Alaoui</p></div><button onClick={()=>download(true)}>↓ Exporter tous les rapports</button></header>
+  useEffect(() => { api.get<ParticipantReport[]>('/participant/reports').then(items => { setReports(items); setSelected(items[0] ?? null) }).catch(error => setError(error instanceof Error ? error.message : 'Impossible de charger les rapports.')) }, [])
 
-  <section className="reports-v2-summary">
-   <div className="reports-v2-score"><span>MOYENNE GÉNÉRALE</span><strong>76<small>/100</small></strong><em>+4 points depuis avril</em></div>
-   <div className="reports-v2-summary-line"><span>ASSIDUITÉ GLOBALE</span><strong>88%</strong><i><span style={{width:'88%'}}/></i><small>21 présences sur 24 séances</small></div>
-   <div className="reports-v2-summary-line"><span>OBJECTIF DU TRIMESTRE</span><strong>80/100</strong><i><span style={{width:'95%'}}/></i><small>Encore 4 points pour atteindre l’objectif</small></div>
-  </section>
+  function download(items: ParticipantReport[]) {
+    const content = items.map(report => [`${new Date(report.periode).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}`, `Formation : ${report.formation}`, `Score : ${report.score_global}/100`, `Présence : ${report.taux_presence}%`, report.appreciation ?? '', ...report.competences.map(item => `${item.competence} : ${item.score}%`)].join('\n')).join('\n\n---\n\n')
+    const url = URL.createObjectURL(new Blob([`EDUOS MAROC — RAPPORT DE SUIVI\n\n${content}`], { type: 'text/plain;charset=utf-8' })); const anchor = document.createElement('a'); anchor.href = url; anchor.download = items.length > 1 ? 'Rapports_EDUOS.txt' : `Rapport_${items[0].periode}.txt`; anchor.click(); URL.revokeObjectURL(url); setNotice('Rapport exporté à partir des données publiées.')
+  }
 
-  <div className="reports-v2-workspace">
-   <aside className="reports-v2-periods"><span>PÉRIODES DISPONIBLES</span>{REPORTS.map(report=><button key={report.id} className={selected.id===report.id?'active':''} onClick={()=>setSelected(report)}><time><strong>{report.month}</strong><small>{report.year}</small></time><span><strong>{report.score}/100</strong><small>{report.delta} vs mois précédent</small></span><i>›</i></button>)}</aside>
-   <main className="reports-v2-reader">
-    <header><div><span>RAPPORT MENSUEL</span><h2>{selected.month} {selected.year}</h2><p>Délivré par K. Alaoui · {selected.attendance} présences</p></div><div className="reports-v2-mark"><strong>{selected.score}</strong><small>/100</small></div></header>
-    <div className="reports-v2-body">
-     <section className="reports-v2-skills"><div className="reports-v2-title"><span>COMPÉTENCES</span><h3>Niveau par domaine</h3></div>{selected.skills.map(([label,value])=><div className="reports-v2-skill" key={label}><span><strong>{label}</strong><em>{value}%</em></span><i><span style={{width:`${value}%`}}/></i></div>)}</section>
-     <aside className="reports-v2-insight"><span>ASSIDUITÉ DU MOIS</span><strong>{selected.rate}%</strong><small>{selected.attendance} séances suivies</small><i><span style={{width:`${selected.rate}%`}}/></i></aside>
-    </div>
-    <blockquote><span>APPRÉCIATION DU FORMATEUR</span><p>“{selected.comment}”</p></blockquote>
-    <footer><span>Rapport vérifié · EDUOS Maroc</span><button onClick={()=>download()}>Télécharger ce rapport →</button></footer>
-   </main>
+  const average = reports.length ? Math.round(reports.reduce((sum, report) => sum + Number(report.score_global), 0) / reports.length) : 0
+  const attendance = reports.length ? Math.round(reports.reduce((sum, report) => sum + Number(report.taux_presence), 0) / reports.length) : 0
+
+  return <div className="reports-v2">
+    {notice && <div className="part-toast"><span>✓</span>{notice}</div>}{error && <div className="auth-error" role="alert">{error}</div>}
+    <header className="reports-v2-head"><div><div className="page-breadcrumb"><span>EDUOS</span><span>›</span><span>Rapports</span></div><h1>Rapports de suivi</h1><p>Rapports publiés par vos formateurs et enseignants.</p></div><button onClick={() => reports.length && download(reports)} disabled={!reports.length}>↓ Exporter tous les rapports</button></header>
+    <section className="reports-v2-summary"><div className="reports-v2-score"><span>MOYENNE GÉNÉRALE</span><strong>{average}<small>/100</small></strong></div><div className="reports-v2-summary-line"><span>ASSIDUITÉ GLOBALE</span><strong>{attendance}%</strong><i><span style={{ width: `${attendance}%` }} /></i><small>D’après les rapports publiés</small></div><div className="reports-v2-summary-line"><span>RAPPORTS DISPONIBLES</span><strong>{reports.length}</strong><i><span style={{ width: reports.length ? '100%' : '0%' }} /></i><small>Documents pédagogiques vérifiés</small></div></section>
+    <div className="reports-v2-workspace"><aside className="reports-v2-periods"><span>PÉRIODES DISPONIBLES</span>{reports.map(report => <button key={report.id} className={selected?.id === report.id ? 'active' : ''} onClick={() => setSelected(report)}><time><strong>{new Date(report.periode).toLocaleDateString('fr-FR', { month: 'short' })}</strong><small>{new Date(report.periode).getFullYear()}</small></time><span><strong>{report.score_global}/100</strong><small>{report.formation}</small></span><i>›</i></button>)}</aside><main className="reports-v2-reader">{!selected ? <p style={{ padding: 24, color: '#64748B' }}>Aucun rapport publié.</p> : <><header><div><span>RAPPORT MENSUEL</span><h2>{new Date(selected.periode).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</h2><p>{selected.formation} · {selected.formateur || 'Équipe pédagogique'}</p></div><div className="reports-v2-mark"><strong>{selected.score_global}</strong><small>/100</small></div></header><div className="reports-v2-body"><section className="reports-v2-skills"><div className="reports-v2-title"><span>COMPÉTENCES</span><h3>Niveau par domaine</h3></div>{selected.competences.map(item => <div className="reports-v2-skill" key={item.id}><span><strong>{item.competence}</strong><em>{item.score}%</em></span><i><span style={{ width: `${item.score}%` }} /></i></div>)}</section><aside className="reports-v2-insight"><span>ASSIDUITÉ</span><strong>{selected.taux_presence}%</strong><small>{selected.cohorte}</small><i><span style={{ width: `${selected.taux_presence}%` }} /></i></aside></div><blockquote><span>APPRÉCIATION DU FORMATEUR</span><p>“{selected.appreciation || 'Aucune appréciation.'}”</p></blockquote><footer><span>Rapport publié · EDUOS Maroc</span><button onClick={() => download([selected])}>Télécharger ce rapport →</button></footer></>}</main></div>
   </div>
- </div>
 }

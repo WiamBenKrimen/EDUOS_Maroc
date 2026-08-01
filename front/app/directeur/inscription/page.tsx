@@ -9,12 +9,6 @@ const STEPS = [
   { label: 'Confirmation', sub: 'Récapitulatif et contrat' },
 ]
 
-const MOCK_GROUPS = [
-  { id: 1, name: 'Anglais B2', schedule: 'Lun · Mer · Ven — 10h à 12h', spots: 2, total: 20, price: 520, formateur: 'M. Karimi' },
-  { id: 2, name: 'Français A2 Soir', schedule: 'Mar · Jeu — 17h à 19h', spots: 6, total: 18, price: 380, formateur: 'Mme Alami' },
-  { id: 3, name: 'Maths Avancés', schedule: 'Sam — 9h à 13h', spots: 4, total: 15, price: 600, formateur: 'M. El Fassi' },
-]
-
 const PLANS = [
   { id: 'mensuel', label: 'Mensuel', desc: 'Paiement chaque mois', factor: 1, badge: null },
   { id: 'trimestriel', label: 'Trimestriel', desc: 'Économisez 6%', factor: 2.82, badge: 'Populaire' },
@@ -34,13 +28,13 @@ export default function InscriptionPage() {
 
   // Form State
   const [formData, setFormData] = useState({
-    prenom: 'Ahmed',
-    nom: 'Cherkaoui',
-    dob: '2005-04-12',
-    telephone: '+212 661 234 567',
-    email: 'ahmed.cherkaoui@mail.com',
-    ville: 'Casablanca',
-    notes: 'Inscription recommandée par le centre Atlas.'
+    prenom: '',
+    nom: '',
+    dob: '',
+    telephone: '',
+    email: '',
+    ville: '',
+    notes: ''
   })
 
   const group = groups[selectedGroup] ?? { id: '', name: 'Chargement des cohortes…', schedule: '', spots: 0, total: 0, price: 0, formateur: '' }

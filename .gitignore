@@ -1,4 +1,7 @@
 node_modules/
+dist/
+build/
+*.egg-info/
 .next/
 .next-*/
 out/
@@ -10,5 +13,16 @@ out/
 *.tsbuildinfo
 *.log
 
+__pycache__/
+*.py[cod]
+.venv/
+.runtime-venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
 .DS_Store
 Thumbs.db
+
+# Identifiants externes locaux
+backend/secrets/

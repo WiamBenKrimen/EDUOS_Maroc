@@ -1,21 +1,11 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { api } from '../../../lib/api-client'
 import SearchFilterBar from '../search-filter-bar'
 
 const NAVY = '#0F2347'
 const BLUE = '#1B3A6B'
 const GOLD = '#D97706'
-
-const INITIAL_RENOUVELLEMENTS = [
-  { id: 1, nom: 'Ahmed Cherkaoui', telephone: '212661234501', formation: 'Anglais B1', expiration: '31 août 2025', jours: 39, action: 'Contacté' },
-  { id: 2, nom: 'Fatima Zahra El Idrissi', telephone: '212661234502', formation: 'Français B2', expiration: '15 août 2025', jours: 23, action: 'En attente' },
-  { id: 3, nom: 'Karim Ouali', telephone: '212661234503', formation: 'Anglais B2', expiration: '10 août 2025', jours: 18, action: 'Intéressé' },
-  { id: 4, nom: 'Sara Benali', telephone: '212661234504', formation: 'Gestion de projet', expiration: '05 août 2025', jours: 13, action: 'En attente' },
-  { id: 5, nom: 'Omar Tahiri', telephone: '212661234505', formation: 'Marketing digital', expiration: '01 août 2025', jours: 9, action: 'Urgent' },
-  { id: 6, nom: 'Nour El Houda Fassi', telephone: '212661234506', formation: 'Français A2', expiration: '28 juil. 2025', jours: 5, action: 'Urgent' },
-  { id: 7, nom: 'Yasmine Ait Ouali', telephone: '212661234507', formation: 'Espagnol débutant', expiration: '25 juil. 2025', jours: 2, action: 'Urgent' },
-  { id: 8, nom: 'Mehdi Bensouda', telephone: '212661234508', formation: 'Anglais B1', expiration: '20 sept. 2025', jours: 59, action: 'Programmé' },
-]
 
 function joursColor(j: number) {
   if (j <= 7) return { color: '#DC2626', bg: '#FEE2E2' }
@@ -31,38 +21,84 @@ const ACTION_MAP: Record<string, { color: string; bg: string }> = {
   'Intéressé': { color: '#7C3AED', bg: '#F3E8FF' },
   'Programmé': { color: '#059669', bg: '#ECFDF5' },
   'Renouvelé': { color: '#059669', bg: '#ECFDF5' },
+  'Perdu': { color: '#DC2626', bg: '#FEE2E2' },
 }
 
 export default function RenouvellemmentsPage() {
-  const [renouvellements, setRenouvellements] = useState(INITIAL_RENOUVELLEMENTS)
+  const [renouvellements, setRenouvellements] = useState<any[]>([])
   const [toast, setToast] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedRenewal, setSelectedRenewal] = useState<(typeof INITIAL_RENOUVELLEMENTS)[number] | null>(null)
+  const [selectedRenewal, setSelectedRenewal] = useState<any | null>(null)
   const [duration, setDuration] = useState('6')
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10))
   const [amount, setAmount] = useState('1200')
+
+  useEffect(() => {
+    api.get<any[]>('/director/renewals').then(items => {
+      const today = Date.now()
+      const actionLabels: Record<string, string> = {
+        a_venir: 'En attente',
+        contacte: 'Contacté',
+        renouvele: 'Renouvelé',
+        perdu: 'Perdu',
+      }
+      setRenouvellements(items.map(item => {
+        const expiration = new Date(`${item.date_expiration}T12:00:00`)
+        const jours = Math.ceil((expiration.getTime() - today) / 86_400_000)
+        return {
+          id: item.id,
+          nom: item.participant,
+          telephone: item.telephone ?? '',
+          formation: item.formation,
+          expiration: new Intl.DateTimeFormat('fr-FR', {
+            day: '2-digit', month: 'short', year: 'numeric',
+          }).format(expiration),
+          jours,
+          action: item.statut === 'a_venir' && jours <= 7
+            ? 'Urgent'
+            : (actionLabels[item.statut] ?? item.statut),
+        }
+      }))
+    }).catch(error => {
+      setToast(error instanceof Error ? error.message : 'Chargement impossible.')
+    })
+  }, [])
 
   const triggerToast = (msg: string) => {
     setToast(msg)
     setTimeout(() => setToast(null), 3000)
   }
 
-  const handleWhatsApp = (renewal: (typeof INITIAL_RENOUVELLEMENTS)[number]) => {
+  const handleWhatsApp = async (renewal: any) => {
     const message = `Bonjour ${renewal.nom}, votre cycle ${renewal.formation} arrive à échéance le ${renewal.expiration}. Souhaitez-vous renouveler votre inscription ? L’équipe EDUOS Maroc reste à votre disposition.`
     window.open(`https://wa.me/${renewal.telephone}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer')
-    setRenouvellements(prev => prev.map(item => item.id === renewal.id ? { ...item, action: 'Contacté' } : item))
-    triggerToast(`Conversation WhatsApp ouverte pour ${renewal.nom}.`)
+    try {
+      await api.patch(`/director/renewals/${renewal.id}`, { statut: 'contacte' })
+      setRenouvellements(prev => prev.map(item => item.id === renewal.id ? { ...item, action: 'Contacté' } : item))
+      triggerToast(`Conversation WhatsApp ouverte pour ${renewal.nom}.`)
+    } catch (error) {
+      triggerToast(error instanceof Error ? error.message : 'Mise à jour impossible.')
+    }
   }
 
-  const handleRenew = (event: React.FormEvent) => {
+  const handleRenew = async (event: React.FormEvent) => {
     event.preventDefault()
     if (!selectedRenewal) return
     const endDate = new Date(`${startDate}T12:00:00`)
     endDate.setMonth(endDate.getMonth() + Number(duration))
     const formattedDate = new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }).format(endDate)
-    setRenouvellements(prev => prev.map(item => item.id === selectedRenewal.id ? { ...item, action: 'Renouvelé', jours: Number(duration) * 30, expiration: formattedDate } : item))
-    triggerToast(`Renouvellement de ${selectedRenewal.nom} validé pour ${duration} mois · ${amount} DH.`)
-    setSelectedRenewal(null)
+    try {
+      await api.patch(`/director/renewals/${selectedRenewal.id}`, {
+        statut: 'renouvele',
+        date_expiration: endDate.toISOString().slice(0, 10),
+        notes: `Renouvellement ${duration} mois, montant ${amount} DH`,
+      })
+      setRenouvellements(prev => prev.map(item => item.id === selectedRenewal.id ? { ...item, action: 'Renouvelé', jours: Number(duration) * 30, expiration: formattedDate } : item))
+      triggerToast(`Renouvellement de ${selectedRenewal.nom} validé pour ${duration} mois · ${amount} DH.`)
+      setSelectedRenewal(null)
+    } catch (error) {
+      triggerToast(error instanceof Error ? error.message : 'Renouvellement impossible.')
+    }
   }
 
   const handleSendAllRelances = () => {

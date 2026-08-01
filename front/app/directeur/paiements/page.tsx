@@ -67,12 +67,20 @@ export default function PaiementsPage() {
     triggerToast(`Reçu téléchargé pour ${p.nom} !`)
   }
 
-  const handleSendRelances = () => {
-    setShowRelanceModal(false)
-    triggerToast('Relances automatiques par SMS & WhatsApp envoyées aux apprenants en retard !')
+  const handleSendRelances = async () => {
+    try {
+      const result = await api.post<{ sent: number }>('/director/reminders/send', {})
+      setShowRelanceModal(false)
+      triggerToast(`${result.sent} relance(s) enregistrée(s) par le backend.`)
+    } catch (error) {
+      triggerToast(error instanceof Error ? error.message : 'Envoi des relances impossible.')
+    }
   }
 
   const filtered = payments.filter(p => p.nom.toLowerCase().includes(searchQuery.toLowerCase()) || p.formation.toLowerCase().includes(searchQuery.toLowerCase()))
+  const paidTotal = payments.filter(p => p.statut === 'Payé').reduce((sum, p) => sum + p.montant, 0)
+  const pending = payments.filter(p => p.statut === 'En attente')
+  const overdue = payments.filter(p => p.statut === 'En retard')
 
   return (
     <div>
@@ -144,9 +152,9 @@ export default function PaiementsPage() {
       {/* Financial Summary KPI Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18, marginBottom: 28 }}>
         {[
-          { label: 'Total encaisse (mois)', val: '84 500 DH', sub: '178 règlements validés', color: '#059669', bg: '#ECFDF5' },
-          { label: 'Montant en attente', val: '12 350 DH', sub: '28 apprenants concernés', color: GOLD, bg: '#FEF3C7' },
-          { label: 'En retard (> 5 jours)', val: '6 200 DH', sub: '12 relances à effectuer', color: '#DC2626', bg: '#FEE2E2' },
+          { label: 'Total encaissé', val: `${paidTotal.toLocaleString('fr-MA')} DH`, sub: `${payments.filter(p => p.statut === 'Payé').length} facture(s) payée(s)`, color: '#059669', bg: '#ECFDF5' },
+          { label: 'Montant en attente', val: `${pending.reduce((sum, p) => sum + p.montant, 0).toLocaleString('fr-MA')} DH`, sub: `${pending.length} apprenant(s) concerné(s)`, color: GOLD, bg: '#FEF3C7' },
+          { label: 'En retard', val: `${overdue.reduce((sum, p) => sum + p.montant, 0).toLocaleString('fr-MA')} DH`, sub: `${overdue.length} relance(s) à effectuer`, color: '#DC2626', bg: '#FEE2E2' },
         ].map((s) => (
           <div key={s.label} style={{ background: '#fff', borderRadius: 14, padding: 22, border: '1px solid #E2E8F0', boxShadow: '0 2px 8px rgba(15,35,71,0.04)' }}>
             <div style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: s.color, marginBottom: 10 }} />
@@ -228,7 +236,7 @@ export default function PaiementsPage() {
 
             <div style={{ padding: 24 }}>
               <p style={{ fontSize: 13, color: '#475569', lineHeight: 1.5, marginBottom: 16 }}>
-                Vous vous prêtez à envoyer une relance groupée aux <strong>12 apprenants</strong> ayant un retard de mensualité supérieur à 5 jours.
+                Vous allez créer une relance pour les factures échues du centre. Les doublons du jour sont automatiquement ignorés par le backend.
               </p>
 
               <div style={{ background: '#F8FAFC', padding: 14, borderRadius: 9, border: '1px solid #E2E8F0', fontSize: 12, color: NAVY, fontStyle: 'italic', marginBottom: 20 }}>

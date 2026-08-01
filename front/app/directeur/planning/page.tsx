@@ -1,123 +1,238 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { ChangeRequest, DAYS, loadRequests, loadSessions, saveRequests, saveSessions, Session } from '../../../lib/planning'
+import { useEffect, useMemo, useState } from 'react'
+import { api } from '../../../lib/api-client'
 
+type ApiSession = {
+  id: string
+  cohorte_id: string
+  intervenant_id: string | null
+  personnel_id: string | null
+  titre: string
+  description: string | null
+  starts_at: string
+  ends_at: string
+  salle: string | null
+  cohorte_nom?: string
+  formation?: string
+}
+
+type Cohorte = { id: string; nom: string }
+
+type ChangeRequest = {
+  id: string
+  session_name: string
+  personnel_name: string
+  current_starts_at: string
+  current_ends_at: string
+  starts_at_souhaite: string
+  ends_at_souhaite: string
+  motif: string | null
+  statut: string
+}
+
+type SessionForm = {
+  cohorteId: string
+  title: string
+  room: string
+  day: number
+  startH: number
+  endH: number
+}
+
+const DAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
 const field = { width: '100%', padding: '9px 11px', border: '1px solid #CBD5E1', borderRadius: 8, background: '#FFF' }
-const emptySession = { name: '', room: 'Salle 1', intervenant: 'Karim Alaoui', personnelId: 'demo-coordinateur', personnelName: 'Sara Alaoui', day: 0, startH: 9, endH: 11, color: '#1B3A6B' }
+const initialForm: SessionForm = { cohorteId: '', title: '', room: '', day: 0, startH: 9, endH: 11 }
+
+function dayIndex(dateValue: string) {
+  return (new Date(dateValue).getDay() + 6) % 7
+}
+
+function mondayOfCurrentWeek() {
+  const result = new Date()
+  result.setHours(0, 0, 0, 0)
+  result.setDate(result.getDate() - ((result.getDay() + 6) % 7))
+  return result
+}
+
+function dateAt(day: number, hour: number) {
+  const date = mondayOfCurrentWeek()
+  date.setDate(date.getDate() + day)
+  date.setHours(hour, 0, 0, 0)
+  return date.toISOString()
+}
+
+function requestStatus(value: string) {
+  return value === 'approuvee' ? 'Approuvée' : value === 'refusee' ? 'Refusée' : 'En attente'
+}
 
 export default function DirectorPlanningPage() {
-  const [sessions, setSessions] = useState<Session[]>([])
+  const [sessions, setSessions] = useState<ApiSession[]>([])
+  const [cohortes, setCohortes] = useState<Cohorte[]>([])
   const [requests, setRequests] = useState<ChangeRequest[]>([])
+  const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [editing, setEditing] = useState<Session | null>(null)
-  const [form, setForm] = useState(emptySession)
-  const [toast, setToast] = useState('')
+  const [editing, setEditing] = useState<ApiSession | null>(null)
+  const [form, setForm] = useState<SessionForm>(initialForm)
+  const [notice, setNotice] = useState('')
+  const [error, setError] = useState('')
 
-  useEffect(() => {
-    setSessions(loadSessions())
-    setRequests(loadRequests())
-  }, [])
-
-  function notify(message: string) {
-    setToast(message)
-    setTimeout(() => setToast(''), 3000)
+  async function load() {
+    setLoading(true)
+    setError('')
+    try {
+      const [sessionItems, cohortItems, requestItems] = await Promise.all([
+        api.get<ApiSession[]>('/director/planning'),
+        api.get<Cohorte[]>('/director/cohortes'),
+        api.get<ChangeRequest[]>('/director/planning/requests'),
+      ])
+      setSessions(sessionItems)
+      setCohortes(cohortItems)
+      setRequests(requestItems)
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Chargement impossible.')
+    } finally {
+      setLoading(false)
+    }
   }
+
+  useEffect(() => { void load() }, [])
+
+  const dates = useMemo(() => DAYS.map((label, index) => {
+    const date = mondayOfCurrentWeek()
+    date.setDate(date.getDate() + index)
+    return { label, date: date.getDate() }
+  }), [])
 
   function openCreate() {
     setEditing(null)
-    setForm(emptySession)
+    setForm({ ...initialForm, cohorteId: cohortes[0]?.id ?? '' })
     setShowForm(true)
   }
 
-  function openEdit(session: Session) {
+  function openEdit(session: ApiSession) {
+    const start = new Date(session.starts_at)
+    const end = new Date(session.ends_at)
     setEditing(session)
-    setForm({ name: session.name, room: session.room, intervenant: session.intervenant, personnelId: session.personnelId, personnelName: session.personnelName, day: session.day, startH: session.startH, endH: session.endH, color: session.color })
+    setForm({
+      cohorteId: session.cohorte_id,
+      title: session.titre,
+      room: session.salle ?? '',
+      day: dayIndex(session.starts_at),
+      startH: start.getHours(),
+      endH: end.getHours(),
+    })
     setShowForm(true)
   }
 
-  function persistSession() {
-    if (!form.name.trim() || form.endH <= form.startH) return
-    const next = editing
-      ? sessions.map(s => s.id === editing.id ? { ...s, ...form } : s)
-      : [...sessions, { id: Date.now(), ...form }]
-    setSessions(next)
-    saveSessions(next)
-    setShowForm(false)
-    notify(editing ? 'Séance mise à jour.' : 'Séance ajoutée au planning.')
-  }
-
-  function removeSession() {
-    if (!editing) return
-    const next = sessions.filter(s => s.id !== editing.id)
-    setSessions(next)
-    saveSessions(next)
-    setShowForm(false)
-    notify('Séance supprimée.')
-  }
-
-  function decide(request: ChangeRequest, approved: boolean) {
-    let nextSessions = sessions
-    if (approved) {
-      nextSessions = sessions.map(s => s.id === request.sessionId ? { ...s, day: request.requestedDay, startH: request.requestedStartH, endH: request.requestedEndH } : s)
-      setSessions(nextSessions)
-      saveSessions(nextSessions)
+  async function persistSession() {
+    if (!form.title.trim() || !form.cohorteId || form.endH <= form.startH) return
+    const payload = {
+      cohorte_id: form.cohorteId,
+      intervenant_id: editing?.intervenant_id ?? null,
+      personnel_id: editing?.personnel_id ?? null,
+      titre: form.title.trim(),
+      description: editing?.description ?? null,
+      starts_at: dateAt(form.day, form.startH),
+      ends_at: dateAt(form.day, form.endH),
+      salle: form.room || null,
     }
-    const nextRequests = requests.map(r => r.id === request.id ? { ...r, status: approved ? 'Approuvée' as const : 'Refusée' as const } : r)
-    setRequests(nextRequests)
-    saveRequests(nextRequests)
-    notify(approved ? 'Demande approuvée et planning mis à jour.' : 'Demande refusée.')
+    setError('')
+    try {
+      if (editing) await api.patch(`/director/planning/${editing.id}`, payload)
+      else await api.post('/director/planning', payload)
+      setShowForm(false)
+      setNotice(editing ? 'Séance mise à jour dans le backend.' : 'Séance ajoutée dans le backend.')
+      await load()
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Enregistrement impossible.')
+    }
   }
 
-  const pendingCount = requests.filter(r => r.status === 'En attente').length
+  async function removeSession() {
+    if (!editing) return
+    try {
+      await api.delete(`/director/planning/${editing.id}`)
+      setShowForm(false)
+      setNotice('Séance supprimée du backend.')
+      await load()
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Suppression impossible.')
+    }
+  }
+
+  async function decide(request: ChangeRequest, approved: boolean) {
+    try {
+      await api.patch(`/director/planning/requests/${request.id}`, { statut: approved ? 'approuvee' : 'refusee' })
+      setNotice(approved ? 'Demande approuvée et séance reportée.' : 'Demande refusée.')
+      await load()
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Décision impossible.')
+    }
+  }
 
   return (
     <div>
-      {toast && <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 1200, background: '#0F2347', color: '#FFF', padding: '12px 18px', borderRadius: 9, fontWeight: 700, fontSize: 13 }}>{toast}</div>}
-      <header style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 20, marginBottom: 24, flexWrap: 'wrap' }}>
-        <div><p style={{ color: '#94A3B8', fontSize: 12, marginBottom: 5 }}>Directeur / Planning</p><h1 style={{ color: '#0F2347', fontSize: 25, fontWeight: 800 }}>Planning des séances</h1><p style={{ color: '#64748B', fontSize: 13, marginTop: 5 }}>Planifiez les séances et traitez les demandes de changement des opérateurs.</p></div>
-        <button className="btn-gold" onClick={openCreate}>Ajouter une séance</button>
+      {notice && <div className="card card-p" role="status" style={{ color: '#047857', marginBottom: 14 }}>{notice}</div>}
+      {error && <div className="card card-p" role="alert" style={{ color: '#B91C1C', marginBottom: 14 }}>{error}</div>}
+      <header className="page-header">
+        <div className="page-header-left"><div className="page-breadcrumb"><span>Directeur</span><span className="page-breadcrumb-sep">›</span><span>Planning</span></div><h1 className="page-title">Planning des séances</h1><p className="page-subtitle">Séances et demandes synchronisées avec FastAPI.</p></div>
+        <button className="btn btn-primary btn-sm" onClick={openCreate} disabled={!cohortes.length}>Ajouter une séance</button>
       </header>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.55fr) minmax(300px, .75fr)', gap: 18, alignItems: 'start' }}>
-        <section className="op-card" style={{ padding: 0, overflow: 'hidden' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(95px, 1fr))', background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', overflowX: 'auto' }}>
-            {DAYS.map(d => <div key={d.label} style={{ padding: '13px 10px', textAlign: 'center', borderRight: '1px solid #E2E8F0' }}><strong style={{ color: '#64748B', fontSize: 11 }}>{d.label}</strong><div style={{ color: '#0F2347', fontWeight: 800, marginTop: 2 }}>{d.date} JAN</div></div>)}
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(95px, 1fr))', minHeight: 540, overflowX: 'auto' }}>
-            {DAYS.map((day, index) => <div key={day.label} style={{ padding: 8, borderRight: '1px solid #EEF2F7', background: '#FFF' }}>
-              {sessions.filter(s => s.day === index).sort((a, b) => a.startH - b.startH).map(s => <button key={s.id} onClick={() => openEdit(s)} style={{ display: 'block', width: '100%', textAlign: 'left', background: '#FFF', border: '1px solid #E2E8F0', borderLeft: `4px solid ${s.color}`, borderRadius: 8, padding: '10px 9px', marginBottom: 8, cursor: 'pointer' }}>
-                <strong style={{ display: 'block', color: '#0F2347', fontSize: 12 }}>{s.name}</strong>
-                <span style={{ display: 'block', color: '#475569', fontSize: 11, marginTop: 4 }}>{s.startH}h00 à {s.endH}h00</span>
-                <span style={{ display: 'block', color: '#94A3B8', fontSize: 10, marginTop: 3 }}>{s.intervenant} · {s.room}</span>
-              </button>)}
-            </div>)}
-          </div>
-        </section>
+      {loading ? <div className="card card-p" style={{ textAlign: 'center' }}>Chargement depuis FastAPI…</div> : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.55fr) minmax(300px, .75fr)', gap: 18, alignItems: 'start' }}>
+          <section className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(95px, 1fr))', background: '#F8FAFC' }}>
+              {dates.map(day => <div key={day.label} style={{ padding: 13, textAlign: 'center', borderRight: '1px solid #E2E8F0' }}><strong>{day.label}</strong><div>{day.date}</div></div>)}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(95px, 1fr))', minHeight: 470 }}>
+              {dates.map((day, index) => <div key={day.label} style={{ padding: 8, borderRight: '1px solid #EEF2F7' }}>
+                {sessions.filter(session => dayIndex(session.starts_at) === index).sort((a, b) => a.starts_at.localeCompare(b.starts_at)).map(session => (
+                  <button key={session.id} onClick={() => openEdit(session)} style={{ display: 'block', width: '100%', textAlign: 'left', background: '#FFF', border: '1px solid #E2E8F0', borderLeft: '4px solid #1B3A6B', borderRadius: 8, padding: 10, marginBottom: 8 }}>
+                    <strong style={{ display: 'block' }}>{session.titre}</strong>
+                    <span style={{ display: 'block', marginTop: 4 }}>{new Date(session.starts_at).getHours()}h–{new Date(session.ends_at).getHours()}h</span>
+                    <small>{session.cohorte_nom} · {session.salle || 'Sans salle'}</small>
+                  </button>
+                ))}
+              </div>)}
+            </div>
+          </section>
 
-        <aside className="op-card" style={{ padding: 20 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}><div><h2 style={{ color: '#0F2347', fontSize: 16, fontWeight: 800 }}>Demandes de changement</h2><p style={{ color: '#64748B', fontSize: 11, marginTop: 3 }}>Envoyées par les opérateurs</p></div>{pendingCount > 0 && <span style={{ background: '#FEF3C7', color: '#92400E', borderRadius: 6, padding: '4px 7px', fontSize: 11, fontWeight: 800 }}>{pendingCount}</span>}</div>
-          {requests.length === 0 && <div style={{ padding: '30px 12px', textAlign: 'center', background: '#F8FAFC', borderRadius: 8, color: '#64748B', fontSize: 12 }}>Aucune demande pour le moment.</div>}
-          <div style={{ display: 'grid', gap: 10 }}>
-            {requests.map(r => <article key={r.id} style={{ border: '1px solid #E2E8F0', borderRadius: 9, padding: 13 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}><strong style={{ color: '#0F2347', fontSize: 12 }}>{r.personnelName}</strong><span style={{ fontSize: 10, fontWeight: 700, color: r.status === 'En attente' ? '#92400E' : r.status === 'Approuvée' ? '#047857' : '#B91C1C' }}>{r.status}</span></div>
-              <p style={{ color: '#475569', fontSize: 11, marginTop: 7, lineHeight: 1.5 }}><strong>{r.sessionName}</strong><br />{DAYS[r.currentDay].label} {r.currentStartH}h-{r.currentEndH}h vers <strong>{DAYS[r.requestedDay].label} {r.requestedStartH}h-{r.requestedEndH}h</strong></p>
-              {r.reason && <p style={{ color: '#64748B', fontSize: 10, marginTop: 6 }}>Motif : {r.reason}</p>}
-              {r.status === 'En attente' && <div style={{ display: 'flex', gap: 7, marginTop: 11 }}><button onClick={() => decide(r, false)} className="btn btn-ghost btn-sm" style={{ flex: 1, justifyContent: 'center' }}>Refuser</button><button onClick={() => decide(r, true)} className="btn-navy btn-sm" style={{ flex: 1, justifyContent: 'center' }}>Approuver</button></div>}
-            </article>)}
-          </div>
-        </aside>
-      </div>
+          <aside className="card card-p">
+            <h2 style={{ fontSize: 16, marginBottom: 12 }}>Demandes de changement</h2>
+            {!requests.length && <div style={{ color: '#64748B' }}>Aucune demande.</div>}
+            <div style={{ display: 'grid', gap: 10 }}>
+              {requests.map(request => (
+                <article key={request.id} style={{ border: '1px solid #E2E8F0', borderRadius: 9, padding: 13 }}>
+                  <div className="row-between"><strong>{request.personnel_name}</strong><span className="badge badge-navy">{requestStatus(request.statut)}</span></div>
+                  <p style={{ marginTop: 8, fontSize: 12 }}>{request.session_name}<br />Nouvel horaire : {new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(request.starts_at_souhaite))}</p>
+                  {request.motif && <p className="card-meta" style={{ marginTop: 6 }}>Motif : {request.motif}</p>}
+                  {request.statut === 'en_attente' && <div className="row" style={{ marginTop: 10 }}><button className="btn btn-ghost btn-sm" onClick={() => void decide(request, false)}>Refuser</button><button className="btn btn-primary btn-sm" onClick={() => void decide(request, true)}>Approuver</button></div>}
+                </article>
+              ))}
+            </div>
+          </aside>
+        </div>
+      )}
 
       {showForm && <div role="dialog" aria-modal="true" style={{ position: 'fixed', inset: 0, zIndex: 1100, background: 'rgba(9,24,46,.48)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-        <div className="op-card" style={{ width: '100%', maxWidth: 520, padding: 24 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><h2 style={{ color: '#0F2347', fontSize: 18, fontWeight: 800 }}>{editing ? 'Modifier la séance' : 'Ajouter une séance'}</h2><button className="btn btn-ghost btn-sm" onClick={() => setShowForm(false)}>Fermer</button></div>
+        <div className="card card-p" style={{ width: '100%', maxWidth: 520 }}>
+          <div className="row-between"><h2>{editing ? 'Modifier la séance' : 'Ajouter une séance'}</h2><button className="btn btn-ghost btn-sm" onClick={() => setShowForm(false)}>Fermer</button></div>
           <div style={{ display: 'grid', gap: 12, marginTop: 20 }}>
-            <label style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>Cours<input style={{ ...field, marginTop: 5 }} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}><label style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>Salle<input style={{ ...field, marginTop: 5 }} value={form.room} onChange={e => setForm({ ...form, room: e.target.value })} /></label><label style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>Intervenant<select style={{ ...field, marginTop: 5 }} value={form.intervenant} onChange={e => setForm({ ...form, intervenant: e.target.value })}><option>Karim Alaoui</option><option>Laila Bennouna</option><option>Omar El Fassi</option><option>Sanae Tahiri</option><option>Youssef Chraibi</option><option>Nadia Rami</option></select></label></div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}><label style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>Jour<select style={{ ...field, marginTop: 5 }} value={form.day} onChange={e => setForm({ ...form, day: Number(e.target.value) })}>{DAYS.map((d, i) => <option key={d.label} value={i}>{d.label}</option>)}</select></label><label style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>Début<input type="number" min="8" max="19" style={{ ...field, marginTop: 5 }} value={form.startH} onChange={e => setForm({ ...form, startH: Number(e.target.value) })} /></label><label style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>Fin<input type="number" min="9" max="20" style={{ ...field, marginTop: 5 }} value={form.endH} onChange={e => setForm({ ...form, endH: Number(e.target.value) })} /></label></div>
+            <label>Cohorte<select style={{ ...field, marginTop: 5 }} value={form.cohorteId} onChange={event => setForm({ ...form, cohorteId: event.target.value })}>{cohortes.map(cohorte => <option key={cohorte.id} value={cohorte.id}>{cohorte.nom}</option>)}</select></label>
+            <label>Cours<input style={{ ...field, marginTop: 5 }} value={form.title} onChange={event => setForm({ ...form, title: event.target.value })}/></label>
+            <label>Salle<input style={{ ...field, marginTop: 5 }} value={form.room} onChange={event => setForm({ ...form, room: event.target.value })}/></label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+              <label>Jour<select style={{ ...field, marginTop: 5 }} value={form.day} onChange={event => setForm({ ...form, day: Number(event.target.value) })}>{DAYS.map((day, index) => <option key={day} value={index}>{day}</option>)}</select></label>
+              <label>Début<input type="number" min={6} max={22} style={{ ...field, marginTop: 5 }} value={form.startH} onChange={event => setForm({ ...form, startH: Number(event.target.value) })}/></label>
+              <label>Fin<input type="number" min={7} max={23} style={{ ...field, marginTop: 5 }} value={form.endH} onChange={event => setForm({ ...form, endH: Number(event.target.value) })}/></label>
+            </div>
           </div>
-          <div style={{ display: 'flex', justifyContent: editing ? 'space-between' : 'flex-end', gap: 10, marginTop: 22 }}>{editing && <button onClick={removeSession} className="btn btn-sm" style={{ color: '#B91C1C', background: '#FEE2E2', border: 0 }}>Supprimer</button>}<div style={{ display: 'flex', gap: 10 }}><button className="btn btn-ghost btn-sm" onClick={() => setShowForm(false)}>Annuler</button><button className="btn-gold" disabled={!form.name.trim() || form.endH <= form.startH} onClick={persistSession}>Enregistrer</button></div></div>
+          <div className="row-between" style={{ marginTop: 20 }}>
+            {editing ? <button className="btn btn-sm" style={{ color: '#B91C1C' }} onClick={() => void removeSession()}>Supprimer</button> : <span/>}
+            <div className="row"><button className="btn btn-ghost btn-sm" onClick={() => setShowForm(false)}>Annuler</button><button className="btn btn-primary btn-sm" onClick={() => void persistSession()}>Enregistrer</button></div>
+          </div>
         </div>
       </div>}
     </div>

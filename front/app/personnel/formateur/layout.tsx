@@ -25,7 +25,7 @@ export default function FormateurLayout({ children }: { children: ReactNode }) {
   const initials = user?.nom?.split(' ').map(x => x[0]).join('').slice(0, 2).toUpperCase() || 'KA'
 
   return (
-    <div className={`op-shell${collapsed ? ' sidebar-collapsed' : ''}`}>
+    <div className={`op-shell${collapsed ? ' sidebar-collapsed' : ''}${pathname === '/personnel/formateur/ressources' ? ' resource-route' : ''}`}>
       {menuOpen && <button className="dir-overlay" aria-label="Fermer le menu" onClick={() => setMenuOpen(false)} />}
       <aside className={`op-sidebar${menuOpen ? ' is-open' : ''}`}>
         <button className="universal-sidebar-toggle" onClick={() => setCollapsed(x => !x)} aria-label="Réduire le menu">‹</button>

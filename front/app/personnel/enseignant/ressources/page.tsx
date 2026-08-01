@@ -1,1 +1,1 @@
-export { default } from '../../coordinateur/ressources/page'
+export { default } from '@/components/teaching/ResourcesView'

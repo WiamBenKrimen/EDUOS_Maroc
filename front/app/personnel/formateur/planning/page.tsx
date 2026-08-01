@@ -1,1 +1,1 @@
-export { default } from '../../coordinateur/planning/page'
+export { default } from '@/components/teaching/PlanningView'

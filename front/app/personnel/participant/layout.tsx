@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ReactNode, useEffect, useState } from 'react'
 import LogoutButton from '../../logout-button'
+import { api } from '@/lib/api-client'
+import type { ParticipantDashboard } from '@/lib/participant-types'
 
 const navItems = [
   {
@@ -58,7 +60,6 @@ const navItems = [
   {
     label: 'Notifications',
     href: '/personnel/participant/notifications',
-    badge: '2',
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -82,13 +83,22 @@ export default function ParticipantLayout({ children }: { children: ReactNode })
   const [menuOpen, setMenuOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [showNotifs, setShowNotifs] = useState(false)
+  const [dashboard, setDashboard] = useState<ParticipantDashboard | null>(null)
 
   useEffect(() => setMenuOpen(false), [pathname])
+  useEffect(() => {
+    api.get<ParticipantDashboard>('/participant/dashboard').then(setDashboard).catch(() => undefined)
+  }, [pathname])
 
   const isActive = (item: typeof navItems[0]) => pathname.startsWith(item.href)
+  const profile = dashboard?.profile
+  const unread = dashboard?.stats.notifications_non_lues ?? 0
+  const fullName = profile ? `${profile.prenom} ${profile.nom}` : 'Participant'
+  const initials = profile ? `${profile.prenom[0] ?? ''}${profile.nom[0] ?? ''}`.toUpperCase() : 'P'
+  const isDashboard = pathname === '/personnel/participant/mon-espace'
 
   return (
-    <div className={`part-shell${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
+    <div className={`part-shell${sidebarCollapsed ? ' sidebar-collapsed' : ''}${pathname === '/personnel/participant/ressources' ? ' resource-route' : ''}${isDashboard ? ' dashboard-route' : ''}`}>
       {menuOpen && (
         <button className="dir-overlay" aria-label="Fermer" onClick={() => setMenuOpen(false)} />
       )}
@@ -116,7 +126,7 @@ export default function ParticipantLayout({ children }: { children: ReactNode })
             >
               <span className="part-nav-icon">{item.icon}</span>
               {item.label}
-              {'badge' in item && item.badge && <span className="part-nav-badge">{item.badge}</span>}
+              {item.href.endsWith('/notifications') && unread > 0 && <span className="part-nav-badge">{unread}</span>}
             </Link>
           ))}
         </nav>
@@ -124,8 +134,8 @@ export default function ParticipantLayout({ children }: { children: ReactNode })
         <div className="part-sidebar-footer">
           <div className="part-user-card" style={{ marginBottom: 10 }}>
             <div className="part-user-info">
-              <strong>Yasmine Bennani</strong>
-              <span>Élève · Anglais B2</span>
+              <strong>{fullName}</strong>
+              <span>Élève{profile?.formation ? ` · ${profile.formation}` : ''}</span>
             </div>
           </div>
           <LogoutButton />
@@ -134,40 +144,24 @@ export default function ParticipantLayout({ children }: { children: ReactNode })
 
       {/* ── Main Content ── */}
       <div className="part-content">
+        {isDashboard && (
+          <button className="part-dashboard-mobile-menu" onClick={() => setMenuOpen(true)} aria-label="Ouvrir le menu principal">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+        )}
         <header className="part-topbar">
           <button className="part-mobile-menu" onClick={() => setMenuOpen(true)} aria-label="Ouvrir le menu">
             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
           </button>
-          <div style={{ position: 'relative', width: 300 }}>
-            <svg
-              width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.2" strokeLinecap="round"
-              style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }}
-            >
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-            <input
-              type="text"
-              placeholder="Rechercher (cours, devoirs, reçus...)"
-              style={{
-                width: '100%',
-                padding: '8px 14px 8px 38px',
-                borderRadius: 99,
-                border: '1px solid #CBD5E1',
-                background: '#F8FAFC',
-                fontSize: '.82rem',
-                outline: 'none'
-              }}
-            />
-          </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{ position: 'relative' }}>
+          <div className="part-topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: 16, marginLeft: 'auto' }}>
+            <div className="part-notification-menu" style={{ position: 'relative' }}>
               <button
                 onClick={() => setShowNotifs(!showNotifs)}
                 style={{ position: 'relative', width: 38, height: 38, borderRadius: 10, border: '1px solid #E2E8F0', background: '#fff', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-                <span style={{ position: 'absolute', top: -4, right: -4, width: 18, height: 18, borderRadius: '50%', background: '#EF4444', color: '#fff', fontSize: '.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #fff' }}>2</span>
+                {unread > 0 && <span style={{ position: 'absolute', top: -4, right: -4, minWidth: 18, height: 18, padding: '0 4px', borderRadius: 9, background: '#EF4444', color: '#fff', fontSize: '.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #fff' }}>{unread}</span>}
               </button>
 
               {showNotifs && (
@@ -175,21 +169,22 @@ export default function ParticipantLayout({ children }: { children: ReactNode })
                   <div style={{ fontWeight: 800, fontSize: '.84rem', color: '#0F2347', marginBottom: 8, borderBottom: '1px solid #F1F5F9', paddingBottom: 6 }}>
                     Notifications Apprenant
                   </div>
-                  <div style={{ fontSize: '.78rem', color: '#475569', marginBottom: 8 }}>
-                    🔔 Prochaine séance d'Anglais B2 demain à 09h00.
-                  </div>
-                  <div style={{ fontSize: '.78rem', color: '#475569', padding: '6px 0' }}>
-                    📄 Nouveau reçu de paiement disponible au téléchargement.
-                  </div>
+                  {dashboard?.notifications.length ? dashboard.notifications.slice(0, 3).map(notification => (
+                    <div key={notification.id} style={{ fontSize: '.78rem', color: '#475569', padding: '6px 0', borderBottom: '1px solid #F8FAFC' }}>
+                      <strong style={{ display: 'block', color: '#0F2347' }}>{notification.titre}</strong>
+                      {notification.message}
+                    </div>
+                  )) : <div style={{ fontSize: '.78rem', color: '#64748B', padding: '6px 0' }}>Aucune notification récente.</div>}
+                  <Link href="/personnel/participant/notifications" onClick={() => setShowNotifs(false)} style={{ display: 'block', marginTop: 8, fontSize: '.76rem', fontWeight: 700, color: '#2563EB' }}>Voir toutes les notifications</Link>
                 </div>
               )}
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div className="part-user-avatar" style={{ width: 36, height: 36, fontSize: '.8rem' }}>YB</div>
+            <div className="part-topbar-profile" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div className="part-user-avatar" style={{ width: 36, height: 36, fontSize: '.8rem' }}>{initials}</div>
               <div>
-                <span style={{ display: 'block', fontSize: '.84rem', fontWeight: 700, color: '#0F2347' }}>Yasmine Bennani</span>
-                <span style={{ display: 'block', fontSize: '.7rem', color: '#64748B' }}>Anglais B2</span>
+                <span style={{ display: 'block', fontSize: '.84rem', fontWeight: 700, color: '#0F2347' }}>{fullName}</span>
+                <span style={{ display: 'block', fontSize: '.7rem', color: '#64748B' }}>{profile?.formation ?? 'Espace participant'}</span>
               </div>
             </div>
           </div>

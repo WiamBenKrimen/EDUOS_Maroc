@@ -5984,3 +5984,18 @@ body {
     display: none;
   }
 }
+
+/* ── Rapports Page Styles ─────────────────────────────────────────────────── */
+.rapport-kpi-card {
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+.rapport-kpi-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(15, 35, 71, .10) !important;
+}
+
+@keyframes rapport-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+

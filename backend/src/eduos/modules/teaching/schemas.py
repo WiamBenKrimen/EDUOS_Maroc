@@ -28,6 +28,16 @@ class AttendanceSheetInput(BaseModel):
     entries: list[AttendanceEntryInput] = Field(min_length=1)
 
 
+class OnlineSessionStartInput(BaseModel):
+    meeting_url: str = Field(min_length=8, max_length=2000)
+
+    @model_validator(mode="after")
+    def validate_meeting_url(self):
+        if not self.meeting_url.startswith(("https://", "http://")):
+            raise ValueError("Le lien de visioconférence doit commencer par http:// ou https://.")
+        return self
+
+
 ResourceType = Literal["dossier", "pdf", "video", "document", "exercice", "qcm"]
 
 

@@ -563,3 +563,81 @@ async def change_password(
         new_password,
     )
     return item is not None
+
+
+async def list_schedule(
+    pool: asyncpg.Pool,
+    user_id: UUID,
+    centre_id: UUID,
+) -> list[asyncpg.Record]:
+    """Return all séances for the active cohorte of a participant."""
+    return await pool.fetch(
+        """
+        SELECT s.id,
+               s.titre,
+               s.description,
+               s.starts_at,
+               s.ends_at,
+               s.salle,
+               s.statut,
+               c.nom       AS cohorte,
+               f.titre     AS formation,
+               concat_ws(' ', trainer.prenom, trainer.nom) AS formateur,
+               os.status   AS online_status,
+               os.meeting_url
+          FROM inscriptions i
+          JOIN cohortes c     ON c.id  = i.cohorte_id
+          JOIN formations f   ON f.id  = c.formation_id
+          JOIN participants p ON p.id  = i.participant_id
+          JOIN users u        ON u.id  = p.user_id
+          JOIN seances s      ON s.cohorte_id = i.cohorte_id
+               AND s.statut <> 'annulee'
+          LEFT JOIN intervenants iv  ON iv.id = s.intervenant_id
+          LEFT JOIN users trainer    ON trainer.id = iv.user_id
+          LEFT JOIN online_sessions os ON os.seance_id = s.id
+         WHERE u.id          = $1
+           AND u.centre_id   = $2
+           AND i.statut      = 'confirmee'
+         ORDER BY s.starts_at
+        """,
+        user_id,
+        centre_id,
+    )
+
+
+async def join_online_session(
+    pool: asyncpg.Pool,
+    user_id: UUID,
+    centre_id: UUID,
+    session_id: UUID,
+) -> asyncpg.Record | None:
+    """Mark participant as present for online session and return meeting_url."""
+    return await pool.fetchrow(
+        """
+        WITH target_participant AS (
+            SELECT p.id AS participant_id
+              FROM participants p
+              JOIN users u ON u.id = p.user_id
+             WHERE u.id = $1 AND u.centre_id = $2
+        ), mark_presence AS (
+            INSERT INTO presences(seance_id, participant_id, statut, check_in_at, validated_at)
+            SELECT $3, tp.participant_id, 'present'::attendance_status, now(), now()
+              FROM target_participant tp
+              JOIN seances s ON s.id = $3
+              JOIN inscriptions i ON i.cohorte_id = s.cohorte_id AND i.participant_id = tp.participant_id AND i.statut = 'confirmee'
+            ON CONFLICT (seance_id, participant_id) DO UPDATE
+              SET statut = 'present'::attendance_status,
+                  check_in_at = coalesce(presences.check_in_at, now())
+            RETURNING seance_id
+        )
+        SELECT os.meeting_url, os.status AS online_status
+          FROM online_sessions os
+          JOIN seances s ON s.id = os.seance_id
+          JOIN mark_presence mp ON mp.seance_id = os.seance_id
+         WHERE os.seance_id = $3 AND os.status = 'active'
+        """,
+        user_id,
+        centre_id,
+        session_id,
+    )
+

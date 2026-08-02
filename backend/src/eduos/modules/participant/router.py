@@ -191,3 +191,25 @@ async def change_password(
     if not changed:
         raise HTTPException(400, "Le mot de passe actuel est incorrect.")
     return {"changed": True}
+
+
+@router.get("/schedule")
+async def schedule(pool: DatabasePool, user: Participant):
+    """Return all séances for the participant's active cohorte."""
+    return rows(await repository.list_schedule(pool, user["id"], user["centre_id"]))
+
+
+@router.post("/online-sessions/{session_id}/join")
+async def join_online_session(
+    session_id: UUID,
+    pool: DatabasePool,
+    user: Participant,
+):
+    """Join online Google Meet session and mark presence automatically."""
+    item = await repository.join_online_session(
+        pool, user["id"], user["centre_id"], session_id
+    )
+    if not item or not item["meeting_url"]:
+        raise HTTPException(404, "Séance en ligne introuvable ou non active.")
+    return dict(item)
+

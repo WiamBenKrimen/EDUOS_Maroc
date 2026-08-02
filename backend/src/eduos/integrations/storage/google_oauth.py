@@ -9,7 +9,8 @@ from eduos.integrations.storage.google_drive import DRIVE_FILE_SCOPE
 GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GOOGLE_USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo"
-OAUTH_SCOPES = f"openid email {DRIVE_FILE_SCOPE}"
+CALENDAR_EVENTS_SCOPE = "https://www.googleapis.com/auth/calendar.events"
+OAUTH_SCOPES = f"openid email {DRIVE_FILE_SCOPE} {CALENDAR_EVENTS_SCOPE}"
 
 
 class GoogleOAuthError(RuntimeError):

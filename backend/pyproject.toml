@@ -12,6 +12,7 @@ dependencies = [
   "alembic==1.16.5",
   "asyncpg==0.31.0",
   "email-validator==2.2.0",
+  "reportlab==3.6.12",
   "fastapi==0.139.2",
   "google-auth==2.47.0",
   "psycopg[binary]==3.2.10",

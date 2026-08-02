@@ -1,6 +1,9 @@
 import json
+import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 from uuid import UUID
 
 import asyncpg
@@ -22,6 +25,7 @@ from eduos.integrations.storage.google_oauth import (
 from eduos.modules.google_drive import repository
 
 STATE_PURPOSE = "google_drive_oauth"
+GOOGLE_CALENDAR_EVENTS_URL = "https://www.googleapis.com/calendar/v3/calendars/primary/events?conferenceDataVersion=1"
 
 
 def _oauth_settings(settings: Settings) -> tuple[str, str, str]:
@@ -159,6 +163,44 @@ async def complete_authorization(
 async def disconnect(pool: asyncpg.Pool, centre_id: UUID) -> dict:
     disconnected = await repository.delete_connection(pool, centre_id)
     return {"disconnected": disconnected}
+
+
+def _create_meet_event(storage: GoogleDriveStorage, title: str, starts_at, ends_at: object) -> str:
+    body = json.dumps({
+        "summary": title,
+        "start": {"dateTime": starts_at.isoformat()},
+        "end": {"dateTime": ends_at.isoformat()},
+        "conferenceData": {"createRequest": {"requestId": uuid.uuid4().hex, "conferenceSolutionKey": {"type": "hangoutsMeet"}}},
+    }).encode("utf-8")
+    request = Request(GOOGLE_CALENDAR_EVENTS_URL, data=body, method="POST", headers={
+        "Authorization": f"Bearer {storage._access_token()}",
+        "Content-Type": "application/json",
+    })
+    try:
+        with urlopen(request, timeout=30) as response:
+            event = json.loads(response.read())
+    except (HTTPError, URLError, TimeoutError, ValueError) as exc:
+        raise GoogleOAuthError("Google Meet n'a pas pu être créé. Reconnectez votre compte Google en autorisant Google Calendar.") from exc
+    meeting_url = event.get("hangoutLink")
+    if not meeting_url:
+        entry_points = (event.get("conferenceData") or {}).get("entryPoints") or []
+        meeting_url = next((item.get("uri") for item in entry_points if item.get("entryPointType") == "video"), None)
+    if not meeting_url:
+        raise GoogleOAuthError("Google n'a pas renvoyé le lien Google Meet.")
+    return meeting_url
+
+
+async def create_google_meet(pool: asyncpg.Pool, centre_id: UUID, title: str, starts_at, ends_at) -> str:
+    settings = get_settings()
+    connection = await repository.get_connection(pool, centre_id, settings.jwt_secret)
+    if not connection:
+        raise HTTPException(409, "Connectez d'abord votre compte Google pour démarrer un Meet.")
+    client_id, client_secret, _redirect_uri = _oauth_settings(settings)
+    storage = GoogleDriveStorage.from_oauth(client_id, client_secret, connection["refresh_token"], connection["folder_id"])
+    try:
+        return await run_in_threadpool(_create_meet_event, storage, title, starts_at, ends_at)
+    except GoogleOAuthError as exc:
+        raise HTTPException(502, str(exc)) from exc
 
 
 async def storage_for_centre(

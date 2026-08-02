@@ -55,6 +55,18 @@ async def directeur_required(user: CurrentUser) -> asyncpg.Record:
 Director = Annotated[asyncpg.Record, Depends(directeur_required)]
 
 
+async def admin_required(user: CurrentUser) -> asyncpg.Record:
+    if user["role"] != "admin":
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Accès réservé à l'administration EDUOS.",
+        )
+    return user
+
+
+Admin = Annotated[asyncpg.Record, Depends(admin_required)]
+
+
 async def teaching_staff_required(user: CurrentUser) -> asyncpg.Record:
     if (
         user["role"] != "personnel"

@@ -5,7 +5,7 @@ from urllib.parse import unquote
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, StreamingResponse
 
 from eduos.api.dependencies import (
     DatabasePool,
@@ -118,6 +118,29 @@ async def save_attendance(
         session_id,
         payload,
     )
+
+
+@router.get("/online-sessions")
+async def online_sessions(pool: DatabasePool, user: Teacher):
+    return rows(await repository.list_online_sessions(pool, user["id"], user["centre_id"]))
+
+
+@router.post("/online-sessions/{session_id}/start")
+async def start_online_session(
+    session_id: UUID, pool: DatabasePool, user: Teacher,
+):
+    item = await service.start_google_meet_session(pool, user, session_id)
+    if not item:
+        raise HTTPException(404, "Séance introuvable ou non affectée.")
+    return dict(item)
+
+
+@router.post("/online-sessions/{session_id}/stop")
+async def stop_online_session(session_id: UUID, pool: DatabasePool, user: Teacher):
+    item = await repository.stop_online_session(pool, user["id"], user["centre_id"], session_id)
+    if not item:
+        raise HTTPException(404, "Séance en ligne introuvable ou non affectée.")
+    return dict(item)
 
 
 @router.get("/resources")
@@ -334,3 +357,19 @@ async def save_grades(
     user: Teacher,
 ):
     return await service.save_grades(pool, user, payload)
+
+
+@router.get("/grades/pdf")
+async def download_grades_pdf(
+    pool: DatabasePool,
+    user: Teacher,
+    cohorte_id: UUID | None = None,
+):
+    pdf_buffer = await service.generate_group_notes_pdf(pool, user, cohorte_id)
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": 'attachment; filename="Rapport_Notes_Groupe.pdf"',
+        },
+    )

@@ -138,6 +138,52 @@ async def list_sessions(
     )
 
 
+async def list_online_sessions(pool: asyncpg.Pool, user_id: UUID, centre_id: UUID) -> list[asyncpg.Record]:
+    return await pool.fetch(
+        """
+        SELECT s.id,s.titre,s.starts_at,s.ends_at,c.nom AS cohorte,f.titre AS formation,
+               os.status AS online_status,os.meeting_url,os.started_at AS online_started_at,
+               count(pr.id) FILTER (WHERE pr.statut IN ('present','retard'))::int AS attendees
+          FROM seances s JOIN cohortes c ON c.id=s.cohorte_id JOIN formations f ON f.id=c.formation_id
+          LEFT JOIN intervenants iv ON iv.id=s.intervenant_id LEFT JOIN online_sessions os ON os.seance_id=s.id
+          LEFT JOIN presences pr ON pr.seance_id=s.id
+         WHERE f.centre_id=$2 AND (iv.user_id=$1 OR s.personnel_id=$1) AND s.statut<>'annulee'
+         GROUP BY s.id,c.nom,f.titre,os.status,os.meeting_url,os.started_at
+         ORDER BY s.starts_at DESC
+        """, user_id, centre_id)
+
+
+async def start_online_session(pool: asyncpg.Pool, user_id: UUID, centre_id: UUID, session_id: UUID, meeting_url: str) -> asyncpg.Record | None:
+    return await pool.fetchrow(
+        """
+        INSERT INTO online_sessions(seance_id,meeting_url,status,started_at,ended_at)
+        SELECT s.id,$4,'active',now(),NULL FROM seances s JOIN cohortes c ON c.id=s.cohorte_id
+          JOIN formations f ON f.id=c.formation_id LEFT JOIN intervenants iv ON iv.id=s.intervenant_id
+         WHERE s.id=$3 AND f.centre_id=$2 AND (iv.user_id=$1 OR s.personnel_id=$1)
+        ON CONFLICT(seance_id) DO UPDATE SET meeting_url=excluded.meeting_url,status='active',started_at=now(),ended_at=NULL
+        RETURNING *
+        """, user_id, centre_id, session_id, meeting_url)
+
+
+async def get_session_for_online_start(pool: asyncpg.Pool, user_id: UUID, centre_id: UUID, session_id: UUID) -> asyncpg.Record | None:
+    return await pool.fetchrow(
+        """
+        SELECT s.id,s.titre,s.starts_at,s.ends_at FROM seances s JOIN cohortes c ON c.id=s.cohorte_id
+          JOIN formations f ON f.id=c.formation_id LEFT JOIN intervenants iv ON iv.id=s.intervenant_id
+         WHERE s.id=$3 AND f.centre_id=$2 AND (iv.user_id=$1 OR s.personnel_id=$1)
+        """, user_id, centre_id, session_id)
+
+
+async def stop_online_session(pool: asyncpg.Pool, user_id: UUID, centre_id: UUID, session_id: UUID) -> asyncpg.Record | None:
+    return await pool.fetchrow(
+        """
+        UPDATE online_sessions os SET status='ended',ended_at=now() FROM seances s JOIN cohortes c ON c.id=s.cohorte_id
+          JOIN formations f ON f.id=c.formation_id LEFT JOIN intervenants iv ON iv.id=s.intervenant_id
+         WHERE os.seance_id=s.id AND os.seance_id=$3 AND f.centre_id=$2 AND (iv.user_id=$1 OR s.personnel_id=$1)
+        RETURNING os.*
+        """, user_id, centre_id, session_id)
+
+
 async def create_change_request(
     pool: asyncpg.Pool,
     user_id: UUID,

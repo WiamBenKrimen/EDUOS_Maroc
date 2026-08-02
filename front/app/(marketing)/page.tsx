@@ -8,6 +8,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { api } from '@/lib/api-client'
 
 /* ── Reveal hook ─────────────────────────────────────────── */
 function useReveal(delay = 0) {
@@ -855,6 +856,8 @@ function CTASection({ onOpenCandidature }: { onOpenCandidature: () => void }) {
 /* ── Modal Candidature Centre ────────────────────────────── */
 function CandidatureModal({ onClose }: { onClose: () => void }) {
   const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
   const [form, setForm] = useState({
     centreNom: '',
     responsableNom: '',
@@ -866,7 +869,7 @@ function CandidatureModal({ onClose }: { onClose: () => void }) {
     remarques: ''
   })
 
-  const [refNumber] = useState(`CAND-2026-${Math.floor(1000 + Math.random() * 9000)}`)
+  const [refNumber, setRefNumber] = useState('')
 
   const handleToggleBesoin = (b: string) => {
     setForm(prev => ({
@@ -875,17 +878,29 @@ function CandidatureModal({ onClose }: { onClose: () => void }) {
     }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.centreNom.trim() || !form.responsableNom.trim() || !form.telephone.trim()) return
-    const demandes = JSON.parse(localStorage.getItem('eduos_candidatures') ?? '[]')
-    localStorage.setItem('eduos_candidatures', JSON.stringify([{
-      id: refNumber,
-      ...form,
-      statut: 'En attente',
-      date: new Date().toISOString(),
-    }, ...demandes]))
-    setSubmitted(true)
+    setSubmitting(true)
+    setError('')
+    try {
+      const result = await api.post<{ reference: string }>('/centre-applications', {
+        centre_nom: form.centreNom,
+        responsable_nom: form.responsableNom,
+        telephone: form.telephone,
+        email: form.email || null,
+        ville: form.ville,
+        taille_apprenants: form.tailleEleves,
+        besoins: form.besoins,
+        remarques: form.remarques || null,
+      })
+      setRefNumber(result.reference)
+      setSubmitted(true)
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : 'Envoi de la candidature impossible.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -907,6 +922,7 @@ function CandidatureModal({ onClose }: { onClose: () => void }) {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {error && <p role="alert" style={{ margin: 0, color: '#B91C1C', fontSize: '.8rem' }}>{error}</p>}
               <div>
                 <label style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '.78rem', color: '#334155', marginBottom: 5 }}>
                   Nom officiel du centre de formation *
@@ -1038,8 +1054,8 @@ function CandidatureModal({ onClose }: { onClose: () => void }) {
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20, borderTop: '1px solid #F1F5F9', paddingTop: 14 }}>
               <button type="button" className="btn-outline" style={{ padding: '9px 16px' }} onClick={onClose}>Annuler</button>
-              <button type="submit" className="btn-navy" style={{ padding: '10px 24px' }}>
-                Envoyer ma candidature
+              <button type="submit" className="btn-navy" disabled={submitting} style={{ padding: '10px 24px', opacity: submitting ? .65 : 1 }}>
+                {submitting ? 'Envoi en cours…' : 'Envoyer ma candidature'}
               </button>
             </div>
           </form>

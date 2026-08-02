@@ -105,6 +105,13 @@ const navItems = [
       </svg>
     ),
   },
+  {
+    label: 'Messages WhatsApp',
+    href: '/directeur/messages',
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-9 8.5 9.5 9.5 0 0 1-4.5-1.1L3 20l1.2-4.2A8.5 8.5 0 1 1 21 11.5Z"/><path d="M8.5 9.5c.2 3 2 4.8 5 5"/></svg>
+    ),
+  },
 ]
 
 export default function DirecteurLayout({ children }: { children: ReactNode }) {

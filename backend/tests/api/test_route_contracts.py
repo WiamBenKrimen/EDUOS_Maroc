@@ -41,6 +41,8 @@ EXPECTED_ROUTES = {
     ("POST", "/api/director/reminders/send"),
     ("GET", "/api/director/notifications"),
     ("PATCH", "/api/director/notifications/read-all"),
+    ("GET", "/api/director/whatsapp/contacts"),
+    ("POST", "/api/director/whatsapp/messages"),
     ("GET", "/api/personnel/dashboard"),
     ("GET", "/api/personnel/cohorts"),
     ("GET", "/api/personnel/planning"),

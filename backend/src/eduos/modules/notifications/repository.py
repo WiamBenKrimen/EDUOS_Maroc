@@ -19,6 +19,25 @@ async def list_user_notifications(
     )
 
 
+async def list_whatsapp_contacts(pool: asyncpg.Pool, centre_id: UUID) -> list[asyncpg.Record]:
+    return await pool.fetch(
+        """
+        SELECT u.id,concat_ws(' ',u.prenom,u.nom) AS nom,u.telephone,u.role,
+               coalesce(p.matricule,'') AS matricule
+          FROM users u LEFT JOIN participants p ON p.user_id=u.id
+         WHERE u.centre_id=$1 AND u.statut='actif' AND u.telephone IS NOT NULL AND btrim(u.telephone)<>''
+         ORDER BY (u.role='participant') DESC,u.prenom,u.nom
+        """, centre_id)
+
+
+async def get_whatsapp_contact(pool: asyncpg.Pool, centre_id: UUID, recipient_id: UUID) -> asyncpg.Record | None:
+    return await pool.fetchrow(
+        """
+        SELECT u.id,concat_ws(' ',u.prenom,u.nom) AS nom,u.telephone FROM users u
+         WHERE u.id=$2 AND u.centre_id=$1 AND u.statut='actif' AND u.telephone IS NOT NULL AND btrim(u.telephone)<>''
+        """, centre_id, recipient_id)
+
+
 async def mark_all_read(pool: asyncpg.Pool, user_id: UUID) -> int:
     result = await pool.execute(
         """

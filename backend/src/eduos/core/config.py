@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     google_drive_oauth_redirect_uri: str = (
         "http://localhost:3001/api/personnel/resources/google/callback"
     )
+    evolution_api_url: str | None = None
+    evolution_api_key: str | None = None
+    evolution_api_instance: str | None = None
     model_config = SettingsConfigDict(
         env_file=(
             REPOSITORY_ROOT / ".env",
@@ -51,6 +54,5 @@ class Settings(BaseSettings):
         return self
 
 
-@lru_cache
 def get_settings() -> Settings:
     return Settings()

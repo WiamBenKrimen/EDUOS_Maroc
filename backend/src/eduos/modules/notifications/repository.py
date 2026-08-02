@@ -38,6 +38,63 @@ async def get_whatsapp_contact(pool: asyncpg.Pool, centre_id: UUID, recipient_id
         """, centre_id, recipient_id)
 
 
+async def get_user_by_phone(pool: asyncpg.Pool, centre_id: UUID, telephone: str) -> asyncpg.Record | None:
+    # Match last 8-9 digits to handle +212 / 06 / 07 variations
+    clean_num = "".join(c for c in telephone if c.isdigit())
+    if len(clean_num) >= 8:
+        suffix = clean_num[-8:]
+        return await pool.fetchrow(
+            """
+            SELECT u.id, concat_ws(' ', u.prenom, u.nom) AS nom, u.telephone
+              FROM users u
+             WHERE u.centre_id = $1
+               AND regexp_replace(u.telephone, '\\D', '', 'g') LIKE $2
+             LIMIT 1
+            """,
+            centre_id,
+            f"%{suffix}",
+        )
+    return None
+
+
+async def save_whatsapp_message(
+    pool: asyncpg.Pool,
+    centre_id: UUID,
+    recipient_id: UUID,
+    direction: str,
+    message: str,
+) -> asyncpg.Record:
+    return await pool.fetchrow(
+        """
+        INSERT INTO whatsapp_chat_messages (centre_id, recipient_id, direction, message)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id, centre_id, recipient_id, direction, message, created_at
+        """,
+        centre_id,
+        recipient_id,
+        direction,
+        message,
+    )
+
+
+async def list_whatsapp_chat_messages(
+    pool: asyncpg.Pool,
+    centre_id: UUID,
+    recipient_id: UUID,
+) -> list[asyncpg.Record]:
+    return await pool.fetch(
+        """
+        SELECT id, centre_id, recipient_id, direction, message, created_at
+          FROM whatsapp_chat_messages
+         WHERE centre_id = $1 AND recipient_id = $2
+         ORDER BY created_at ASC
+         LIMIT 200
+        """,
+        centre_id,
+        recipient_id,
+    )
+
+
 async def mark_all_read(pool: asyncpg.Pool, user_id: UUID) -> int:
     result = await pool.execute(
         """
@@ -55,7 +112,7 @@ async def list_reminder_rules(
 ) -> list[asyncpg.Record]:
     return await pool.fetch(
         """
-        SELECT rr.id,rr.titre,rr.offset_days,rr.canal,
+        SELECT rr.id,rr.offset_days,rr.canal,
                rr.message_template,rr.actif,
                count(r.id)::int AS messages_envoyes
           FROM relance_rules rr

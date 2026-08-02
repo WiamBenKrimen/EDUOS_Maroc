@@ -65,6 +65,10 @@ export const api = {
     return request<T>(path, { method: 'POST', body: JSON.stringify(body) })
   },
 
+  postForm<T>(path: string, formData: FormData): Promise<T> {
+    return request<T>(path, { method: 'POST', body: formData })
+  },
+
   uploadFile<T>(
     path: string,
     file: File,

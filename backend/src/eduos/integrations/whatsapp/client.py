@@ -26,7 +26,7 @@ class EvolutionWhatsAppClient:
         
         req = Request(url, data=data, headers=headers, method=method)
         try:
-            with urlopen(req, timeout=15) as resp:
+            with urlopen(req, timeout=30) as resp:
                 res_data = resp.read().decode("utf-8")
                 return json.loads(res_data) if res_data else {}
         except HTTPError as exc:
@@ -79,6 +79,44 @@ class EvolutionWhatsAppClient:
         except EvolutionAPIError:
             return False
 
+    def set_webhook(self, instance_name: str, webhook_url: str) -> None:
+        payload = {
+            "webhook": {
+                "enabled": True,
+                "url": webhook_url,
+                "byEvents": False,
+                "events": ["MESSAGES_UPSERT"]
+            }
+        }
+        try:
+            self._request(f"/webhook/set/{quote(instance_name, safe='')}", method="POST", payload=payload)
+        except EvolutionAPIError:
+            pass
+
+    def fetch_messages_for_number(self, instance_name: str, telephone: str) -> list[dict]:
+        """Fetch messages from Evolution API for a specific phone number."""
+        number = self._normalize_phone(telephone)
+        if not number:
+            return []
+        remote_jid = f"{number}@s.whatsapp.net"
+        payload = {
+            "where": {
+                "key": {
+                    "remoteJid": remote_jid
+                }
+            }
+        }
+        try:
+            res = self._request(f"/chat/findMessages/{quote(instance_name, safe='')}", method="POST", payload=payload)
+            messages_data = res.get("messages", {})
+            if isinstance(messages_data, dict):
+                return messages_data.get("records", [])
+            elif isinstance(messages_data, list):
+                return messages_data
+            return []
+        except EvolutionAPIError:
+            return []
+
     @staticmethod
     def _normalize_phone(telephone: str) -> str:
         """Normalize phone number to international format (no + prefix).
@@ -87,13 +125,10 @@ class EvolutionWhatsAppClient:
         number = re.sub(r"\D", "", telephone)
         if not number:
             return ""
-        # Already has country code (starts with 212 or other)
         if number.startswith("212") and len(number) >= 12:
             return number
-        # Moroccan local format: 0XXXXXXXXX (10 digits)
         if number.startswith("0") and len(number) >= 9:
             return "212" + number[1:]
-        # If already without leading 0 and looks like Moroccan (9 digits starting with 6 or 7)
         if len(number) == 9 and number[0] in ("6", "7"):
             return "212" + number
         return number
@@ -106,9 +141,38 @@ class EvolutionWhatsAppClient:
         if len(number) < 10:
             raise EvolutionAPIError(f"Numéro invalide : '{telephone}'. Format attendu : 06XXXXXXXX ou +212XXXXXXXXX.")
         
-        # Evolution API v2 format
         payload = {
             "number": number,
             "text": message,
         }
         self._request(f"/message/sendText/{quote(target_instance, safe='')}", method="POST", payload=payload)
+
+    def send_media(
+        self,
+        telephone: str,
+        media_base64: str,
+        mediatype: str,
+        filename: str,
+        caption: Optional[str] = None,
+        mimetype: Optional[str] = None,
+        instance_name: Optional[str] = None,
+    ) -> None:
+        target_instance = instance_name or self.default_instance
+        number = self._normalize_phone(telephone)
+        if not number:
+            raise EvolutionAPIError("Le destinataire ne possède pas de numéro WhatsApp valide.")
+        
+        clean_b64 = media_base64
+        if "base64," in clean_b64:
+            clean_b64 = clean_b64.split("base64,")[-1]
+        clean_b64 = re.sub(r"\s+", "", clean_b64)
+
+        payload = {
+            "number": number,
+            "media": clean_b64,
+            "mediatype": mediatype,
+            "mimetype": mimetype or "application/octet-stream",
+            "fileName": filename,
+            "caption": caption or "",
+        }
+        self._request(f"/message/sendMedia/{quote(target_instance, safe='')}", method="POST", payload=payload)

@@ -9,7 +9,7 @@ from eduos.modules.facturation.router import router as facturation_router
 from eduos.modules.formations.router import router as formations_router
 from eduos.modules.health.router import router as health_router
 from eduos.modules.inscriptions.router import router as inscriptions_router
-from eduos.modules.notifications.router import router as notifications_router
+from eduos.modules.notifications.router import public_router as whatsapp_public_router, router as notifications_router
 from eduos.modules.paiements.router import router as paiements_router
 from eduos.modules.participant.router import router as participant_router
 from eduos.modules.planning.router import router as planning_router
@@ -21,6 +21,7 @@ from eduos.modules.teaching.router import router as teaching_router
 from eduos.modules.users.router import router as users_router
 
 api_router = APIRouter()
+api_router.include_router(whatsapp_public_router)
 api_router.include_router(health_router)
 api_router.include_router(auth_router)
 api_router.include_router(centres_router)

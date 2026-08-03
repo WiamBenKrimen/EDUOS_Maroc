@@ -7,6 +7,240 @@ type Contact = { id: string; nom: string; telephone: string; role: string; matri
 type WaStatus = { configured: boolean; state: string; qr_code?: string; instance_name?: string; error?: string }
 type ChatMessage = { id: string; centre_id: string; recipient_id: string; direction: 'sent' | 'received'; message: string; created_at: string }
 
+function AudioPlayer({ url }: { url?: string }) {
+  const [playing, setPlaying] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [duration, setDuration] = useState(0)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+
+    function onTimeUpdate() {
+      if (audio && audio.duration) {
+        setProgress((audio.currentTime / audio.duration) * 100)
+      }
+    }
+    function onLoadedData() {
+      if (audio) setDuration(audio.duration)
+    }
+    function onEnded() {
+      setPlaying(false)
+      setProgress(0)
+    }
+
+    audio.addEventListener('timeupdate', onTimeUpdate)
+    audio.addEventListener('loadeddata', onLoadedData)
+    audio.addEventListener('ended', onEnded)
+
+    return () => {
+      audio.removeEventListener('timeupdate', onTimeUpdate)
+      audio.removeEventListener('loadeddata', onLoadedData)
+      audio.removeEventListener('ended', onEnded)
+    }
+  }, [])
+
+  function togglePlay() {
+    if (!audioRef.current) return
+    if (playing) {
+      audioRef.current.pause()
+      setPlaying(false)
+    } else {
+      audioRef.current.play().then(() => setPlaying(true)).catch(() => {})
+    }
+  }
+
+  function formatTime(secs: number) {
+    if (!secs || isNaN(secs)) return '0:00'
+    const m = Math.floor(secs / 60)
+    const s = Math.floor(secs % 60)
+    return `${m}:${s < 10 ? '0' : ''}${s}`
+  }
+
+  return (
+    <div style={{ minWidth: 230, display: 'flex', alignItems: 'center', gap: 10, padding: '4px 0' }}>
+      {url && <audio ref={audioRef} src={url} preload="metadata" />}
+      
+      {/* Play/Pause Button */}
+      <button
+        type="button"
+        onClick={togglePlay}
+        disabled={!url}
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: '50%',
+          background: '#0284C7',
+          color: '#fff',
+          border: 'none',
+          cursor: url ? 'pointer' : 'default',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 14,
+          flexShrink: 0,
+        }}
+      >
+        {playing ? '⏸' : '▶'}
+      </button>
+
+      {/* Waveform & Progress */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ height: 6, width: '100%', background: 'rgba(0,0,0,0.12)', borderRadius: 3, overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${progress}%`, background: '#0284C7', transition: 'width 0.1s linear' }} />
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#667781', fontWeight: 600 }}>
+          <span>🎤 Message vocal</span>
+          <span>{formatTime(duration)}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function RenderMessageContent({ text }: { text: string }) {
+  // Check if message is Audio: "🎵 [Message vocal](http://...)" or "🎵 [Audio](http://...)"
+  const audioUrlMatch = text.match(/^🎵\s*\[(.*?)\]\((.*?)\)$/)
+  if (audioUrlMatch) {
+    const url = audioUrlMatch[2]
+    return <AudioPlayer url={url} />
+  }
+
+  // Check if message is a simple audio tag without URL
+  if (text.includes('[Message vocal]') || text.includes('🎵')) {
+    return <AudioPlayer />
+  }
+
+  // Check if message is a document with URL: "📎 [filename.pdf](http://...)\nLégende..."
+  const docUrlMatch = text.match(/^📎\s*\[(.*?)\]\((.*?)\)(?:\n([\s\S]*))?$/)
+  const docSimpleMatch = !docUrlMatch ? text.match(/^📎\s*\[(.*?)\](?:\n([\s\S]*))?$/) : null
+
+  if (docUrlMatch || docSimpleMatch) {
+    const filename = docUrlMatch ? docUrlMatch[1] : docSimpleMatch![1]
+    const url = docUrlMatch ? docUrlMatch[2] : null
+    const caption = docUrlMatch ? docUrlMatch[3] : docSimpleMatch![2]
+    const ext = filename.split('.').pop()?.toUpperCase() || 'DOC'
+    const isPdf = ext === 'PDF'
+
+    function handleOpen() {
+      if (url) {
+        window.open(url, '_blank')
+      }
+    }
+
+    return (
+      <div style={{ minWidth: 240 }}>
+        <div
+          onClick={handleOpen}
+          title={url ? "Cliquer pour ouvrir le document" : filename}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            background: 'rgba(0,0,0,0.05)',
+            padding: '10px 12px',
+            borderRadius: 10,
+            border: '1px solid rgba(0,0,0,0.08)',
+            marginBottom: caption ? 6 : 0,
+            cursor: url ? 'pointer' : 'default',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <div
+            style={{
+              width: 38,
+              height: 44,
+              borderRadius: 8,
+              background: isPdf ? '#EF4444' : '#0284C7',
+              color: '#fff',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 10,
+              fontWeight: 800,
+              flexShrink: 0,
+              boxShadow: '0 2px 4px rgba(0,0,0,0.12)',
+            }}
+          >
+            <span style={{ fontSize: 13, lineHeight: 1 }}>📄</span>
+            <span style={{ fontSize: 9, marginTop: 2, textTransform: 'uppercase' }}>{ext}</span>
+          </div>
+
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <strong
+              style={{
+                display: 'block',
+                fontSize: 13,
+                color: '#111B21',
+                textOverflow: 'ellipsis',
+                overflow: 'hidden',
+                whiteSpace: 'nowrap',
+                fontWeight: 700,
+              }}
+            >
+              {filename}
+            </strong>
+            <small style={{ color: '#667781', fontSize: 11, fontWeight: 500 }}>
+              Document {ext} {url ? '· 👁️ Ouvrir / Télécharger' : ''}
+            </small>
+          </div>
+
+          {url && (
+            <div style={{ fontSize: 18, color: '#0F2347', flexShrink: 0, opacity: 0.7 }}>
+              📥
+            </div>
+          )}
+        </div>
+
+        {caption && (
+          <p style={{ margin: '6px 0 0', fontSize: 14, color: '#111B21', lineHeight: 1.45, whiteSpace: 'pre-wrap' }}>
+            {caption}
+          </p>
+        )}
+      </div>
+    )
+  }
+
+  // Check if message is a photo with URL: "📷 [Photo](http://...)\nLégende..."
+  const photoUrlMatch = text.match(/^📷\s*\[Photo\]\((.*?)\)(?:\n([\s\S]*))?$/)
+  if (photoUrlMatch) {
+    const url = photoUrlMatch[1]
+    const caption = photoUrlMatch[2]
+    return (
+      <div style={{ minWidth: 220 }}>
+        <div
+          onClick={() => window.open(url, '_blank')}
+          style={{ cursor: 'pointer', borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(0,0,0,0.08)' }}
+        >
+          <img src={url} alt="Photo WhatsApp" style={{ display: 'block', maxWidth: 280, maxHeight: 320, width: '100%', objectFit: 'cover' }} />
+        </div>
+        {caption && <p style={{ margin: '6px 0 0', fontSize: 14, color: '#111B21' }}>{caption}</p>}
+      </div>
+    )
+  }
+
+  const photoSimpleMatch = text.match(/^📷\s*\[Photo\](?:\n([\s\S]*))?$/)
+  if (photoSimpleMatch) {
+    const caption = photoSimpleMatch[1]
+    return (
+      <div style={{ minWidth: 200 }}>
+        <div style={{ padding: '8px 12px', background: 'rgba(0,0,0,0.05)', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#0F2347', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span>🖼️</span> Photo envoyée sur WhatsApp
+        </div>
+        {caption && <p style={{ margin: '6px 0 0', fontSize: 14, color: '#111B21' }}>{caption}</p>}
+      </div>
+    )
+  }
+
+  return (
+    <p style={{ margin: 0, color: '#111B21', fontSize: 14, lineHeight: 1.45, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+      {text}
+    </p>
+  )
+}
+
 function WhatsAppConnectionWidget({ onConnected }: { onConnected: () => void }) {
   const [status, setStatus] = useState<WaStatus | null>(null)
   const [loading, setLoading] = useState(true)
@@ -65,13 +299,12 @@ function WhatsAppConnectionWidget({ onConnected }: { onConnected: () => void }) 
     </div>
   )
 
-  // CONNECTED - Compact banner
   if (status.state === 'open') return (
     <div style={{ padding: '10px 16px', background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: 12, marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span style={{ fontSize: 16 }}>🟢</span>
         <span style={{ fontWeight: 700, color: '#065F46', fontSize: 13 }}>WhatsApp Connecté</span>
-        <span style={{ color: '#059669', fontSize: 12 }}>· Prêt pour envoyer et recevoir des messages et fichiers en direct</span>
+        <span style={{ color: '#059669', fontSize: 12 }}>· Prêt pour envoyer et recevoir des messages, vocaux et fichiers</span>
       </div>
       <button onClick={handleDisconnect} disabled={disconnecting} style={{ padding: '5px 12px', fontSize: 12, color: '#DC2626', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>
         {disconnecting ? 'Déconnexion…' : 'Déconnecter'}
@@ -79,7 +312,6 @@ function WhatsAppConnectionWidget({ onConnected }: { onConnected: () => void }) 
     </div>
   )
 
-  // SHOW QR CODE for scanning
   if ((status.state === 'connecting' || status.state === 'disconnected') && status.qr_code) return (
     <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, marginBottom: 20, overflow: 'hidden' }}>
       <div style={{ padding: '16px 20px', borderBottom: '1px solid #F1F5F9', background: '#F8FAFC', display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -106,7 +338,6 @@ function WhatsAppConnectionWidget({ onConnected }: { onConnected: () => void }) 
     </div>
   )
 
-  // DISCONNECTED BUTTON
   return (
     <div style={{ padding: '16px 20px', background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -133,6 +364,13 @@ export default function DirectorMessagesPage() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [waConnected, setWaConnected] = useState(false)
+
+  // Voice recording states
+  const [isRecording, setIsRecording] = useState(false)
+  const [recordingSeconds, setRecordingSeconds] = useState(0)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const audioChunksRef = useRef<Blob[]>([])
+  const recordTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   const chatEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -193,6 +431,75 @@ export default function DirectorMessagesPage() {
     }
   }
 
+  // Voice recording functions
+  async function startRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const recorder = new MediaRecorder(stream)
+      audioChunksRef.current = []
+
+      recorder.ondataavailable = e => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data)
+      }
+
+      recorder.start()
+      mediaRecorderRef.current = recorder
+      setIsRecording(true)
+      setRecordingSeconds(0)
+
+      recordTimerRef.current = setInterval(() => {
+        setRecordingSeconds(s => s + 1)
+      }, 1000)
+    } catch {
+      setError('Accès au microphone refusé ou non disponible.')
+    }
+  }
+
+  function cancelRecording() {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop()
+      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop())
+    }
+    if (recordTimerRef.current) clearInterval(recordTimerRef.current)
+    setIsRecording(false)
+    setRecordingSeconds(0)
+    audioChunksRef.current = []
+  }
+
+  async function stopAndSendRecording() {
+    if (!mediaRecorderRef.current || !isRecording) return
+    setBusy(true)
+
+    mediaRecorderRef.current.onstop = async () => {
+      if (recordTimerRef.current) clearInterval(recordTimerRef.current)
+      setIsRecording(false)
+      setRecordingSeconds(0)
+
+      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+      const audioFile = new File([audioBlob], `vocal_${Date.now()}.webm`, { type: 'audio/webm' })
+
+      // Send recording
+      try {
+        const formData = new FormData()
+        formData.append('recipient_id', recipientId)
+        formData.append('caption', '')
+        formData.append('file', audioFile)
+
+        await api.postForm('/director/whatsapp/media', formData)
+        fetchChatHistory(recipientId)
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Envoi du message vocal impossible.')
+      } finally {
+        setBusy(false)
+        if (mediaRecorderRef.current) {
+          mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop())
+        }
+      }
+    }
+
+    mediaRecorderRef.current.stop()
+  }
+
   async function send(event: React.FormEvent) {
     event.preventDefault()
     setError('')
@@ -220,7 +527,6 @@ export default function DirectorMessagesPage() {
 
     try {
       if (fileToSend) {
-        // Send file + caption
         const formData = new FormData()
         formData.append('recipient_id', recipientId)
         formData.append('caption', textToSend)
@@ -228,7 +534,6 @@ export default function DirectorMessagesPage() {
 
         await api.postForm('/director/whatsapp/media', formData)
       } else {
-        // Send text message
         await api.post('/director/whatsapp/messages', { recipient_id: recipientId, message: textToSend })
       }
       fetchChatHistory(recipientId)
@@ -252,6 +557,12 @@ export default function DirectorMessagesPage() {
     } catch {
       return ''
     }
+  }
+
+  function formatSeconds(secs: number) {
+    const m = Math.floor(secs / 60)
+    const s = secs % 60
+    return `${m}:${s < 10 ? '0' : ''}${s}`
   }
 
   const safeMessages = Array.isArray(chatMessages) ? chatMessages : []
@@ -345,7 +656,7 @@ export default function DirectorMessagesPage() {
                       key={msg.id}
                       style={{
                         alignSelf: isSent ? 'flex-end' : 'flex-start',
-                        maxWidth: '70%',
+                        maxWidth: '75%',
                         background: isSent ? '#E7FFDB' : '#FFFFFF',
                         borderRadius: isSent ? '12px 12px 0px 12px' : '12px 12px 12px 0px',
                         padding: '9px 14px',
@@ -353,9 +664,8 @@ export default function DirectorMessagesPage() {
                         position: 'relative',
                       }}
                     >
-                      <p style={{ margin: 0, color: '#111B21', fontSize: 14, lineHeight: 1.45, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                        {msg.message}
-                      </p>
+                      <RenderMessageContent text={msg.message} />
+
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4, marginTop: 4 }}>
                         <span style={{ fontSize: 10, color: '#667781' }}>{formatTime(msg.created_at)}</span>
                         {isSent && <span style={{ fontSize: 12, color: '#53BDEB' }}>✓✓</span>}
@@ -366,7 +676,7 @@ export default function DirectorMessagesPage() {
 
                 {!safeMessages.length && (
                   <div style={{ margin: 'auto', textAlign: 'center', background: '#FFF3C4', color: '#543900', padding: '12px 20px', borderRadius: 10, fontSize: 13, maxWidth: 380, boxShadow: '0 1px 2px rgba(0,0,0,0.08)' }}>
-                    💬 Écrivez votre message ou joignez un fichier pour <strong>{selected.nom}</strong> ci-dessous.
+                    💬 Écrivez votre message, enregistrez un vocal 🎙️ ou joignez un fichier pour <strong>{selected.nom}</strong>.
                   </div>
                 )}
                 <div ref={chatEndRef} />
@@ -397,69 +707,113 @@ export default function DirectorMessagesPage() {
                   accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,archive/zip,audio/*,video/*"
                 />
 
-                {/* Attachment Button */}
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  title="Joindre un fichier (Images, PDF, Documents...)"
-                  style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: '50%',
-                    background: selectedFile ? '#25D366' : '#E2E8F0',
-                    color: selectedFile ? '#fff' : '#475569',
-                    border: 'none',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 20,
-                    flexShrink: 0,
-                    transition: 'all 0.2s ease',
-                  }}
-                >
-                  📎
-                </button>
+                {isRecording ? (
+                  /* VOICE RECORDING BAR */
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#FEF2F2', padding: '6px 16px', borderRadius: 24, border: '1px solid #FECACA' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#DC2626', fontWeight: 700, fontSize: 14 }}>
+                      <span style={{ animation: 'pulse 1s infinite', fontSize: 16 }}>🔴</span>
+                      <span>Enregistrement… ({formatSeconds(recordingSeconds)})</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <button type="button" onClick={cancelRecording} style={{ border: 0, background: 'transparent', color: '#64748B', cursor: 'pointer', fontWeight: 700, fontSize: 14, padding: '4px 8px' }}>
+                        Annuler ✕
+                      </button>
+                      <button type="button" onClick={stopAndSendRecording} disabled={busy} style={{ border: 0, background: '#25D366', color: '#fff', borderRadius: 16, padding: '6px 14px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
+                        {busy ? 'Envoi…' : 'Envoyer 🚀'}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Attachment Button */}
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      title="Joindre un fichier (Images, PDF, Documents...)"
+                      style={{
+                        width: 42,
+                        height: 42,
+                        borderRadius: '50%',
+                        background: selectedFile ? '#25D366' : '#E2E8F0',
+                        color: selectedFile ? '#fff' : '#475569',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 20,
+                        flexShrink: 0,
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      📎
+                    </button>
 
-                {/* Text Message Input */}
-                <input
-                  value={message}
-                  onChange={e => setMessage(e.target.value)}
-                  placeholder={selectedFile ? `Ajouter une légende à ${selectedFile.name}...` : `Message à ${selected.nom}...`}
-                  disabled={busy}
-                  style={{
-                    flex: 1,
-                    padding: '12px 16px',
-                    border: '1px solid #CBD5E1',
-                    borderRadius: 24,
-                    fontSize: 14,
-                    outline: 'none',
-                    background: '#fff',
-                  }}
-                />
+                    {/* Microphone Recording Button */}
+                    <button
+                      type="button"
+                      onClick={startRecording}
+                      title="Enregistrer un message vocal"
+                      style={{
+                        width: 42,
+                        height: 42,
+                        borderRadius: '50%',
+                        background: '#E2E8F0',
+                        color: '#0F2347',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 20,
+                        flexShrink: 0,
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      🎙️
+                    </button>
 
-                {/* Send Button */}
-                <button
-                  type="submit"
-                  disabled={busy || (!message.trim() && !selectedFile)}
-                  style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: '50%',
-                    background: busy || (!message.trim() && !selectedFile) ? '#94A3B8' : '#25D366',
-                    color: '#fff',
-                    border: 'none',
-                    cursor: busy || (!message.trim() && !selectedFile) ? 'default' : 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 18,
-                    transition: 'background 0.2s ease',
-                    flexShrink: 0,
-                  }}
-                >
-                  🚀
-                </button>
+                    {/* Text Message Input */}
+                    <input
+                      value={message}
+                      onChange={e => setMessage(e.target.value)}
+                      placeholder={selectedFile ? `Ajouter une légende à ${selectedFile.name}...` : `Message à ${selected.nom}...`}
+                      disabled={busy}
+                      style={{
+                        flex: 1,
+                        padding: '12px 16px',
+                        border: '1px solid #CBD5E1',
+                        borderRadius: 24,
+                        fontSize: 14,
+                        outline: 'none',
+                        background: '#fff',
+                      }}
+                    />
+
+                    {/* Send Button */}
+                    <button
+                      type="submit"
+                      disabled={busy || (!message.trim() && !selectedFile)}
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: '50%',
+                        background: busy || (!message.trim() && !selectedFile) ? '#94A3B8' : '#25D366',
+                        color: '#fff',
+                        border: 'none',
+                        cursor: busy || (!message.trim() && !selectedFile) ? 'default' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 18,
+                        transition: 'background 0.2s ease',
+                        flexShrink: 0,
+                      }}
+                    >
+                      🚀
+                    </button>
+                  </>
+                )}
               </form>
             </section>
           ) : (

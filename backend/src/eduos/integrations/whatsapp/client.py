@@ -117,6 +117,17 @@ class EvolutionWhatsAppClient:
         except EvolutionAPIError:
             return []
 
+    def get_media_base64(self, instance_name: str, message_record: dict) -> Optional[dict]:
+        """Download and decrypt media base64 from WhatsApp media message."""
+        payload = {
+            "message": message_record,
+            "convertToMp4": False
+        }
+        try:
+            return self._request(f"/chat/getBase64FromMediaMessage/{quote(instance_name, safe='')}", method="POST", payload=payload)
+        except EvolutionAPIError:
+            return None
+
     @staticmethod
     def _normalize_phone(telephone: str) -> str:
         """Normalize phone number to international format (no + prefix).
@@ -166,6 +177,9 @@ class EvolutionWhatsAppClient:
         if "base64," in clean_b64:
             clean_b64 = clean_b64.split("base64,")[-1]
         clean_b64 = re.sub(r"\s+", "", clean_b64)
+        missing = len(clean_b64) % 4
+        if missing:
+            clean_b64 += "=" * (4 - missing)
 
         payload = {
             "number": number,

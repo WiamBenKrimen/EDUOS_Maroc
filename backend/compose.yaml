@@ -1,0 +1,55 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: eduos-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: eduos
+      POSTGRES_USER: eduos
+      POSTGRES_PASSWORD: eduos_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - eduos_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eduos -d eduos"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: eduos-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://eduos:eduos_dev_password@postgres:5432/eduos
+      JWT_SECRET: ${JWT_SECRET:-eduos-dev-secret-change-me-32-characters}
+      JWT_EXPIRES_IN_HOURS: ${JWT_EXPIRES_IN_HOURS:-8}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      NVIDIA_API_URL: ${NVIDIA_API_URL:-https://integrate.api.nvidia.com/v1}
+      NVIDIA_API_KEY: ${NVIDIA_API_KEY:-}
+      NVIDIA_AI_MODEL: ${NVIDIA_AI_MODEL:-nvidia/llama-3.3-nemotron-super-49b-v1.5}
+    command:
+      - sh
+      - -c
+      - alembic upgrade head && python -m uvicorn eduos.main:app --host 0.0.0.0 --port 3001
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:3001/api/health')"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  eduos_postgres_data:

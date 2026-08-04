@@ -1,0 +1,64 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "eduos-api"
+version = "1.0.0"
+description = "Backend FastAPI modulaire de la plateforme EDUOS Maroc"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "alembic==1.16.5",
+  "asyncpg==0.31.0",
+  "email-validator==2.2.0",
+  "reportlab==5.0.0",
+  "fastapi==0.139.2",
+  "google-auth==2.47.0",
+  "psycopg[binary]==3.2.10",
+  "pydantic-settings==2.14.2",
+  "python-multipart==0.0.20",
+  "PyJWT==2.13.0",
+  "SQLAlchemy==2.0.43",
+  "uvicorn[standard]==0.52.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "httpx2==2.9.1",
+  "mypy==1.17.1",
+  "pytest==8.4.1",
+  "pytest-asyncio==1.1.0",
+  "ruff==0.12.7",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["eduos*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-q -m 'not integration'"
+asyncio_mode = "auto"
+markers = [
+  "integration: nécessite une base PostgreSQL disponible",
+]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 88
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.10"
+packages = ["eduos"]
+plugins = ["pydantic.mypy"]
+ignore_missing_imports = true
+check_untyped_defs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_unreachable = true

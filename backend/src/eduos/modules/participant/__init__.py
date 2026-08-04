@@ -1,0 +1,1 @@
+"""Espace personnel du participant."""

@@ -29,6 +29,9 @@ services:
       JWT_EXPIRES_IN_HOURS: ${JWT_EXPIRES_IN_HOURS:-8}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
       ENVIRONMENT: ${ENVIRONMENT:-development}
+      NVIDIA_API_URL: ${NVIDIA_API_URL:-https://integrate.api.nvidia.com/v1}
+      NVIDIA_API_KEY: ${NVIDIA_API_KEY:-}
+      NVIDIA_AI_MODEL: ${NVIDIA_AI_MODEL:-nvidia/llama-3.3-nemotron-super-49b-v1.5}
     command:
       - sh
       - -c

@@ -53,7 +53,17 @@ class EvolutionWhatsAppClient:
                 "status": res.get("status")
             }
         except EvolutionAPIError as e:
-            if "introuvable" in str(e).lower() or "not found" in str(e).lower() or "404" in str(e):
+            error_message = str(e).lower()
+            if any(
+                marker in error_message
+                for marker in (
+                    "introuvable",
+                    "not found",
+                    "does not exist",
+                    "n'existe pas",
+                    "404",
+                )
+            ):
                 return {"state": "not_created"}
             return {"state": "disconnected", "error": str(e)}
 

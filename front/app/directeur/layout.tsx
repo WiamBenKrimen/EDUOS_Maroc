@@ -7,6 +7,7 @@ import LogoutButton from '../logout-button'
 import { api } from '../../lib/api-client'
 import { getUser } from '../../lib/auth'
 import type { User } from '../../lib/auth'
+import DirectorAssistant from './assistant-panel'
 
 const navItems = [
   {
@@ -253,6 +254,7 @@ export default function DirecteurLayout({ children }: { children: ReactNode }) {
           {children}
         </main>
       </div>
+      <DirectorAssistant />
     </div>
   )
 }

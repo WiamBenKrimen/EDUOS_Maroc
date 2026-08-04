@@ -1,0 +1,1 @@
+"""Assistant métier du directeur."""

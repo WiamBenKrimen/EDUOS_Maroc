@@ -77,6 +77,40 @@ cd backend
 python -m pytest
 ```
 
+## Assistant IA NVIDIA
+
+L'assistant du directeur utilise l'endpoint NVIDIA NIM compatible OpenAI.
+La clé reste exclusivement dans `backend/.env` :
+
+```env
+NVIDIA_API_URL=https://integrate.api.nvidia.com/v1
+NVIDIA_API_KEY=nvapi-votre-nouvelle-cle
+NVIDIA_AI_MODEL=nvidia/llama-3.3-nemotron-super-49b-v1.5
+```
+
+Après modification, redémarrer FastAPI. Les opérations proposées par le
+modèle sont enregistrées dans `assistant_actions` et ne sont exécutées
+qu'après confirmation explicite du directeur.
+
+L'assistant recherche automatiquement les participants, prospects, membres du
+personnel, cohortes, formations et factures. Le directeur peut donc utiliser un
+nom, un e-mail, un téléphone ou une référence sans saisir d'UUID. En cas
+d'homonymes, l'assistant demande de choisir entre des libellés lisibles.
+
+Les réponses acceptent les titres, listes et tableaux Markdown. Une image est
+affichée seulement lorsque son URL provient des données EDUOS, par exemple
+l'avatar d'un utilisateur. Les liens d'image inventés par le modèle ne sont pas
+autorisés.
+
+Exemples de demandes :
+
+```text
+Trouve l'apprenant Sara Amrani par son téléphone.
+Affiche les factures en attente dans un tableau.
+Enregistre 1 200 MAD en espèces pour la facture de Sara Amrani.
+Planifie une séance Python demain à 10 h avec Youssef.
+```
+
 ## Google Drive pour les ressources pédagogiques
 
 Les fichiers ajoutés par un formateur sont conservés dans un dossier Google

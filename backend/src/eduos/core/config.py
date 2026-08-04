@@ -1,4 +1,3 @@
-from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
@@ -31,6 +30,9 @@ class Settings(BaseSettings):
     evolution_api_url: str | None = None
     evolution_api_key: str | None = None
     evolution_api_instance: str | None = None
+    nvidia_api_url: str = "https://integrate.api.nvidia.com/v1"
+    nvidia_api_key: str | None = None
+    nvidia_ai_model: str = "nvidia/llama-3.3-nemotron-super-49b-v1.5"
     model_config = SettingsConfigDict(
         env_file=(
             REPOSITORY_ROOT / ".env",

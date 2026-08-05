@@ -1,0 +1,540 @@
+/* =============================================
+   EDUOS Chat Widget — CSS Module
+   ============================================= */
+
+/* ── Floating trigger button ── */
+.trigger {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 9998;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1B3A6B 0%, #2563EB 100%);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 32px rgba(37, 99, 235, 0.38), 0 2px 8px rgba(0,0,0,0.18);
+  transition: transform 0.18s cubic-bezier(.34,1.56,.64,1), box-shadow 0.18s;
+  color: #fff;
+}
+
+.trigger:hover {
+  transform: scale(1.08) translateY(-2px);
+  box-shadow: 0 14px 40px rgba(37, 99, 235, 0.48), 0 2px 8px rgba(0,0,0,0.18);
+}
+
+.trigger:active {
+  transform: scale(0.97);
+}
+
+/* Badge non lus sur le bouton trigger */
+.triggerBadge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  background: #EF4444;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  border: 2px solid #fff;
+  animation: bounceIn 0.25s cubic-bezier(.34,1.56,.64,1);
+}
+
+@keyframes bounceIn {
+  from { transform: scale(0); }
+  to   { transform: scale(1); }
+}
+
+/* ── Chat Panel ── */
+.panel {
+  position: fixed;
+  bottom: 94px;
+  right: 28px;
+  z-index: 9999;
+  width: 380px;
+  height: 560px;
+  border-radius: 20px;
+  background: #FFFFFF;
+  box-shadow: 0 24px 80px rgba(15, 35, 71, 0.22), 0 4px 20px rgba(37, 99, 235, 0.10);
+  display: flex;
+  overflow: hidden;
+  animation: panelSlideIn 0.22s cubic-bezier(.34,1.56,.64,1);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+@keyframes panelSlideIn {
+  from { opacity: 0; transform: scale(0.92) translateY(16px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ── Left sidebar: contacts ── */
+.sidebar {
+  width: 140px;
+  min-width: 140px;
+  background: #0F2347;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebarHeader {
+  padding: 16px 12px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.sidebarTitle {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.searchBox {
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.searchInput {
+  width: 100%;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  padding: 5px 8px;
+  font-size: 0.7rem;
+  color: #fff;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+
+.searchInput::placeholder {
+  color: rgba(255,255,255,0.35);
+}
+
+.searchInput:focus {
+  border-color: rgba(255,255,255,0.3);
+}
+
+.contactList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 0;
+}
+
+.contactList::-webkit-scrollbar {
+  width: 3px;
+}
+
+.contactList::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.contactList::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.15);
+  border-radius: 2px;
+}
+
+.contactItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+  border-radius: 0;
+  transition: background 0.12s;
+  position: relative;
+}
+
+.contactItem:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+.contactItem.active {
+  background: rgba(37, 99, 235, 0.3);
+}
+
+.contactAvatar {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563EB, #7C3AED);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.contactInfo {
+  flex: 1;
+  overflow: hidden;
+}
+
+.contactName {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.contactRole {
+  font-size: 0.58rem;
+  color: rgba(255,255,255,0.45);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: capitalize;
+}
+
+.contactUnread {
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  background: #EF4444;
+  color: #fff;
+  font-size: 0.58rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+.noContacts {
+  padding: 16px 10px;
+  color: rgba(255,255,255,0.35);
+  font-size: 0.68rem;
+  text-align: center;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+/* ── Right: chat area ── */
+.chatArea {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #F8FAFC;
+}
+
+/* Header de la conversation */
+.chatHeader {
+  padding: 14px 16px;
+  background: #fff;
+  border-bottom: 1px solid #E2E8F0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.chatHeaderUser {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chatHeaderAvatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1B3A6B, #2563EB);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.chatHeaderName {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #0F2347;
+}
+
+.chatHeaderRole {
+  font-size: 0.68rem;
+  color: #64748B;
+  text-transform: capitalize;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #94A3B8;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  transition: color 0.12s, background 0.12s;
+}
+
+.closeBtn:hover {
+  color: #0F2347;
+  background: #F1F5F9;
+}
+
+/* Messages area */
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.messages::-webkit-scrollbar {
+  width: 4px;
+}
+
+.messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.messages::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 2px;
+}
+
+/* Empty state */
+.emptyChat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #94A3B8;
+  font-size: 0.78rem;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  padding: 20px;
+  text-align: center;
+}
+
+.emptyChatIcon {
+  opacity: 0.4;
+}
+
+/* No conversation selected */
+.noConv {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #94A3B8;
+  font-size: 0.78rem;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  padding: 20px;
+  text-align: center;
+}
+
+/* Message bubbles */
+.messageBubble {
+  display: flex;
+  flex-direction: column;
+  max-width: 82%;
+  animation: fadeUp 0.14s ease;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.messageBubble.sent {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.messageBubble.received {
+  align-self: flex-start;
+  align-items: flex-start;
+}
+
+.bubbleText {
+  padding: 8px 12px;
+  border-radius: 16px;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  word-break: break-word;
+}
+
+.messageBubble.sent .bubbleText {
+  background: linear-gradient(135deg, #1B3A6B, #2563EB);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+.messageBubble.received .bubbleText {
+  background: #fff;
+  color: #1E293B;
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 1px 4px rgba(15,35,71,0.07);
+  border: 1px solid #E2E8F0;
+}
+
+.bubbleMeta {
+  font-size: 0.58rem;
+  color: #94A3B8;
+  margin-top: 3px;
+  padding: 0 2px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.readTick {
+  color: #2563EB;
+}
+
+/* Loading skeleton */
+.loadingMsg {
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #E2E8F0;
+  border-top-color: #2563EB;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Day separator */
+.daySeparator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 4px;
+}
+
+.daySeparatorLine {
+  flex: 1;
+  height: 1px;
+  background: #E2E8F0;
+}
+
+.daySeparatorText {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #94A3B8;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Input area */
+.inputArea {
+  padding: 10px 12px;
+  background: #fff;
+  border-top: 1px solid #E2E8F0;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.messageInput {
+  flex: 1;
+  min-height: 38px;
+  max-height: 100px;
+  resize: none;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-size: 0.78rem;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  color: #1E293B;
+  outline: none;
+  transition: border-color 0.15s;
+  background: #F8FAFC;
+  line-height: 1.4;
+  overflow-y: auto;
+}
+
+.messageInput::placeholder {
+  color: #94A3B8;
+}
+
+.messageInput:focus {
+  border-color: #2563EB;
+  background: #fff;
+}
+
+.sendBtn {
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #1B3A6B, #2563EB);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+
+.sendBtn:hover:not(:disabled) {
+  transform: scale(1.06);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.45);
+}
+
+.sendBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Responsive: smaller screens */
+@media (max-width: 480px) {
+  .panel {
+    right: 8px;
+    bottom: 80px;
+    width: calc(100vw - 16px);
+    height: 70vh;
+  }
+
+  .trigger {
+    right: 16px;
+    bottom: 16px;
+  }
+}

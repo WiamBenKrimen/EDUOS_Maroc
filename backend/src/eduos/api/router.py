@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from eduos.modules.assistant.router import router as assistant_router
+from eduos.modules.chat.router import router as chat_router
 from eduos.modules.auth.router import router as auth_router
 from eduos.modules.centres.router import router as centres_router
 from eduos.modules.cohortes.router import router as cohortes_router
@@ -48,3 +49,4 @@ api_router.include_router(documents_router)
 api_router.include_router(rapports_router)
 api_router.include_router(teaching_router)
 api_router.include_router(participant_router)
+api_router.include_router(chat_router)

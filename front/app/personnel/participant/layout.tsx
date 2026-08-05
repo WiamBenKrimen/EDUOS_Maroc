@@ -1,4 +1,5 @@
 'use client'
+import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -7,6 +8,11 @@ import LogoutButton from '../../logout-button'
 import { api } from '@/lib/api-client'
 import { getUser } from '@/lib/auth'
 import type { ParticipantNotification, ParticipantProfile } from '@/lib/participant-types'
+
+const ChatWidget = dynamic(() => import('@/components/chat/ChatWidget'), {
+  ssr: false,
+  loading: () => null,
+})
 
 const navItems = [
   {
@@ -210,6 +216,7 @@ export default function ParticipantLayout({ children }: { children: ReactNode })
           {children}
         </main>
       </div>
+      <ChatWidget />
     </div>
   )
 }

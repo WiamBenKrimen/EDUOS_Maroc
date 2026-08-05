@@ -1,5 +1,6 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -7,6 +8,11 @@ import { ReactNode, useEffect, useState } from 'react'
 import LogoutButton from '../../logout-button'
 import { getUser } from '../../../lib/auth'
 import { canAccess, type Permission } from '../../../lib/rbac'
+
+const ChatWidget = dynamic(() => import('@/components/chat/ChatWidget'), {
+  ssr: false,
+  loading: () => null,
+})
 
 const navItems: Array<{
   label: string
@@ -197,6 +203,7 @@ export default function PersonnelLayout({ children }: { children: ReactNode }) {
           {children}
         </main>
       </div>
+      <ChatWidget />
     </div>
   )
 }

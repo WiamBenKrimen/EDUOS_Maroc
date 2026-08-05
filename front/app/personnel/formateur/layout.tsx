@@ -1,11 +1,17 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { ReactNode, useEffect, useState } from 'react'
 import LogoutButton from '../../logout-button'
 import { getUser } from '../../../lib/auth'
+
+const ChatWidget = dynamic(() => import('@/components/chat/ChatWidget'), {
+  ssr: false,
+  loading: () => null,
+})
 
 const nav: Array<{ label: string; href: string; icon: ReactNode }> = [
   { label: 'Tableau de bord', href: '/personnel/formateur', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> },
@@ -41,6 +47,7 @@ export default function FormateurLayout({ children }: { children: ReactNode }) {
         <header className="op-topbar"><button className="dir-menu-btn" onClick={() => setMenuOpen(true)} aria-label="Menu"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><div className="op-topbar-search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input placeholder="Rechercher une formation ou un groupe..." /></div><div className="op-topbar-right"><button className="op-notif-btn" aria-label="Notifications"><span className="op-notif-badge">2</span>◌</button><div className="op-user-avatar">{initials}</div></div></header>
         <main className="op-main">{children}</main>
       </div>
+      <ChatWidget />
     </div>
   )
 }

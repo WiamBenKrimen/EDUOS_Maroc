@@ -1,11 +1,17 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { ReactNode, useEffect, useState } from 'react'
 import LogoutButton from '../../logout-button'
 import { getUser } from '../../../lib/auth'
+
+const ChatWidget = dynamic(() => import('@/components/chat/ChatWidget'), {
+  ssr: false,
+  loading: () => null,
+})
 
 const nav: Array<{ label: string; href: string; icon: ReactNode }> = [
   { label: 'Tableau de bord', href: '/personnel/enseignant', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> },
@@ -47,6 +53,7 @@ export default function EnseignantLayout({ children }: { children: ReactNode }) 
         </header>
         <main className="op-main">{children}</main>
       </div>
+      <ChatWidget />
     </div>
   )
 }

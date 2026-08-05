@@ -14,6 +14,11 @@ const DirectorAssistant = dynamic(() => import('./assistant-panel'), {
   loading: () => null,
 })
 
+const ChatWidget = dynamic(() => import('@/components/chat/ChatWidget'), {
+  ssr: false,
+  loading: () => null,
+})
+
 const navItems = [
   {
     label: 'Dashboard',
@@ -273,6 +278,7 @@ export default function DirecteurLayout({ children }: { children: ReactNode }) {
         </main>
       </div>
       <DirectorAssistant />
+      <ChatWidget />
     </div>
   )
 }

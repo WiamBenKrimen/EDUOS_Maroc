@@ -14,6 +14,11 @@ const ChatWidget = dynamic(() => import('@/components/chat/ChatWidget'), {
   loading: () => null,
 })
 
+const SidebarChatLink = dynamic(() => import('@/components/chat/SidebarChatLink'), {
+  ssr: false,
+  loading: () => null,
+})
+
 const navItems: Array<{
   label: string
   href: string
@@ -142,6 +147,7 @@ export default function PersonnelLayout({ children }: { children: ReactNode }) {
               </Link>
             )
           })}
+          <SidebarChatLink variant="op" collapsed={sidebarCollapsed} />
         </nav>
 
         {/* Footer */}

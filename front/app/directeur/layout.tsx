@@ -19,6 +19,11 @@ const ChatWidget = dynamic(() => import('@/components/chat/ChatWidget'), {
   loading: () => null,
 })
 
+const SidebarChatLink = dynamic(() => import('@/components/chat/SidebarChatLink'), {
+  ssr: false,
+  loading: () => null,
+})
+
 const navItems = [
   {
     label: 'Dashboard',
@@ -193,6 +198,7 @@ export default function DirecteurLayout({ children }: { children: ReactNode }) {
               </Link>
             )
           })}
+          <SidebarChatLink variant="dir" collapsed={sidebarCollapsed} />
         </nav>
 
         {/* Footer User */}

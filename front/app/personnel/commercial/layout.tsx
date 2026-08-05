@@ -13,6 +13,11 @@ const ChatWidget = dynamic(() => import('@/components/chat/ChatWidget'), {
   loading: () => null,
 })
 
+const SidebarChatLink = dynamic(() => import('@/components/chat/SidebarChatLink'), {
+  ssr: false,
+  loading: () => null,
+})
+
 const nav: Array<{ label: string; href: string; icon: ReactNode }> = [
   { label: 'Tableau de bord', href: '/personnel/commercial', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> },
   { label: 'Prospects', href: '/personnel/commercial/prospects', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a6 6 0 0 1 12 0v2M19 8v6M22 11h-6"/></svg> },
@@ -40,6 +45,7 @@ export default function CommercialLayout({ children }: { children: ReactNode }) 
             const active = item.href === '/personnel/commercial' ? pathname === item.href : pathname.startsWith(item.href)
             return <Link key={item.href} href={item.href} className={`op-nav-link${active ? ' active' : ''}`}><span className="op-nav-icon">{item.icon}</span><span>{item.label}</span></Link>
           })}
+          <SidebarChatLink variant="op" collapsed={collapsed} />
         </nav>
         <div className="op-sidebar-footer">
           <div className="op-user-card"><div className="op-user-info"><strong>{user?.nom ?? 'Omar Idrissi'}</strong><span>Commercial du centre</span></div></div>

@@ -14,6 +14,11 @@ const ChatWidget = dynamic(() => import('@/components/chat/ChatWidget'), {
   loading: () => null,
 })
 
+const SidebarChatLink = dynamic(() => import('@/components/chat/SidebarChatLink'), {
+  ssr: false,
+  loading: () => null,
+})
+
 const navItems = [
   {
     label: 'Mon Espace',
@@ -151,6 +156,7 @@ export default function ParticipantLayout({ children }: { children: ReactNode })
               {item.href.endsWith('/notifications') && unread > 0 && <span className="part-nav-badge">{unread}</span>}
             </Link>
           ))}
+          <SidebarChatLink variant="op" collapsed={sidebarCollapsed} />
         </nav>
 
         <div className="part-sidebar-footer">

@@ -1,9 +1,20 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import LogoutButton from '../logout-button'
+
+const ChatWidget = dynamic(() => import('@/components/chat/ChatWidget'), {
+  ssr: false,
+  loading: () => null,
+})
+
+const SidebarChatLink = dynamic(() => import('@/components/chat/SidebarChatLink'), {
+  ssr: false,
+  loading: () => null,
+})
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -16,6 +27,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Link href="/admin/demandes" className={`dir-nav-link${pathname.startsWith('/admin/demandes') ? ' active' : ''}`}>
             <span className="dir-nav-icon">⌁</span>Demandes centres
           </Link>
+          <SidebarChatLink variant="dir" />
         </nav>
         <div className="dir-sidebar-footer">
           <div className="dir-footer-user-card"><div className="dir-footer-avatar">AE</div><div className="dir-user-info"><strong>Admin EDUOS</strong><span>Administration</span></div></div>
@@ -26,6 +38,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <header className="dir-topbar"><div className="dir-topbar-right"><strong style={{ color: '#0F2347', fontSize: 13 }}>Validation des centres</strong></div></header>
         <main className="dir-main">{children}</main>
       </div>
+      <ChatWidget />
     </div>
   )
 }

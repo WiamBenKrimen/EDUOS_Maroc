@@ -1,13 +1,18 @@
 'use client'
+import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { ReactNode, useEffect, useState } from 'react'
 import LogoutButton from '../logout-button'
 import { api } from '../../lib/api-client'
 import { getUser } from '../../lib/auth'
 import type { User } from '../../lib/auth'
-import DirectorAssistant from './assistant-panel'
+
+const DirectorAssistant = dynamic(() => import('./assistant-panel'), {
+  ssr: false,
+  loading: () => null,
+})
 
 const navItems = [
   {
@@ -37,6 +42,16 @@ const navItems = [
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>
+      </svg>
+    ),
+  },
+  {
+    label: 'Formations',
+    href: '/directeur/formations',
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" />
       </svg>
     ),
   },
@@ -117,6 +132,7 @@ const navItems = [
 
 export default function DirecteurLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
+  const router = useRouter()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [showNotifs, setShowNotifs] = useState(false)
   const [notifications, setNotifications] = useState<Array<{ id: string; titre: string; message: string; read_at: string | null }>>([])
@@ -164,6 +180,8 @@ export default function DirecteurLayout({ children }: { children: ReactNode }) {
                 key={item.href}
                 href={item.href}
                 className={`dir-nav-link${active ? ' active' : ''}`}
+                onMouseEnter={() => router.prefetch(item.href)}
+                onFocus={() => router.prefetch(item.href)}
               >
                 <span className="dir-nav-icon">{item.icon}</span>
                 {item.label}

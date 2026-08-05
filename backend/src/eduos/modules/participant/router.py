@@ -4,8 +4,8 @@ from fastapi import APIRouter, HTTPException
 
 from eduos.api.dependencies import DatabasePool, Participant
 from eduos.api.resource_download import (
-    google_drive_response,
-    google_drive_thumbnail_response,
+    database_file_response,
+    database_thumbnail_response,
 )
 from eduos.modules.common import rows
 from eduos.modules.participant import repository, service
@@ -57,11 +57,7 @@ async def download_resource(
     )
     if not item:
         raise HTTPException(404, "Ressource accessible introuvable.")
-    return await google_drive_response(
-        pool,
-        user["centre_id"],
-        item["storage_key"],
-    )
+    return database_file_response(item)
 
 
 @router.get("/resources/{resource_id}/preview")
@@ -77,11 +73,7 @@ async def preview_resource(
     )
     if not item:
         raise HTTPException(404, "Ressource accessible introuvable.")
-    return await google_drive_thumbnail_response(
-        pool,
-        user["centre_id"],
-        item["storage_key"],
-    )
+    return database_thumbnail_response(item)
 
 
 @router.patch("/resources/{resource_id}/progress")

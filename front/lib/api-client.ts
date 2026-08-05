@@ -108,11 +108,12 @@ export const api = {
     })
   },
 
-  async download(path: string): Promise<Blob> {
+  async download(path: string, options: { signal?: AbortSignal } = {}): Promise<Blob> {
     const token = typeof window !== 'undefined' ? localStorage.getItem('eduos_token') : null
     const res = await fetch(`${BASE_URL}${path}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       cache: 'no-store',
+      signal: options.signal,
     })
     if (!res.ok) {
       const body = await res.json().catch(() => ({})) as ApiErrorBody

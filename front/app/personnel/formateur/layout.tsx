@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { ReactNode, useEffect, useState } from 'react'
 import LogoutButton from '../../logout-button'
 import { getUser } from '../../../lib/auth'
@@ -18,6 +18,7 @@ const nav: Array<{ label: string; href: string; icon: ReactNode }> = [
 
 export default function FormateurLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
+  const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
   const user = getUser()
@@ -32,7 +33,7 @@ export default function FormateurLayout({ children }: { children: ReactNode }) {
         <div className="op-brand"><Link href="/personnel/formateur"><Image className="sidebar-logo" src="/images/logo.png" alt="EDUOS MAROC" width={180} height={64} priority /></Link></div>
         <nav className="op-nav"><div className="op-nav-label">ESPACE FORMATEUR</div>{nav.map(item => {
           const active = item.href === '/personnel/formateur' ? pathname === item.href : pathname.startsWith(item.href)
-          return <Link key={item.href} href={item.href} className={`op-nav-link${active ? ' active' : ''}`}><span className="op-nav-icon">{item.icon}</span><span>{item.label}</span></Link>
+          return <Link key={item.href} href={item.href} className={`op-nav-link${active ? ' active' : ''}`} onMouseEnter={() => router.prefetch(item.href)} onFocus={() => router.prefetch(item.href)}><span className="op-nav-icon">{item.icon}</span><span>{item.label}</span></Link>
         })}</nav>
         <div className="op-sidebar-footer"><div className="op-user-card"><div className="op-user-info"><strong>{user?.nom ?? 'Karim Alaoui'}</strong><span>Formateur</span></div></div><div style={{ marginTop: 10 }}><LogoutButton /></div></div>
       </aside>

@@ -140,24 +140,20 @@ async def complete_authorization(
             redirect_uri,
             code,
         )
-        storage = GoogleDriveStorage.from_access_token(tokens.access_token)
-        folder_id = await run_in_threadpool(storage.create_folder)
         email = await run_in_threadpool(account_email, tokens.access_token)
-    except (GoogleOAuthError, DriveStorageError) as exc:
+    except GoogleOAuthError as exc:
         raise HTTPException(502, str(exc)) from exc
     await repository.upsert_connection(
         pool,
         state_data["centre_uuid"],
         state_data["user_id"],
         tokens.refresh_token,
-        folder_id,
+        "calendar-only",
         email,
         settings.jwt_secret,
     )
-    fonction = state_data.get("fonction")
-    space = "enseignant" if fonction == "enseignant" else "formateur"
     frontend = settings.cors_origin.rstrip("/")
-    return f"{frontend}/personnel/{space}/ressources?drive=connected"
+    return f"{frontend}/personnel/enseignant/seances-en-ligne?google=connected"
 
 
 async def disconnect(pool: asyncpg.Pool, centre_id: UUID) -> dict:

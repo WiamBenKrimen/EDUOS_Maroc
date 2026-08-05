@@ -1,5 +1,4 @@
 from datetime import date
-from io import BytesIO
 from typing import Annotated
 from urllib.parse import unquote
 from uuid import UUID
@@ -13,8 +12,8 @@ from eduos.api.dependencies import (
     TeachingStaff,
 )
 from eduos.api.resource_download import (
-    google_drive_response,
-    google_drive_thumbnail_response,
+    database_file_response,
+    database_thumbnail_response,
 )
 from eduos.core.config import get_settings
 from eduos.modules.common import rows
@@ -125,6 +124,25 @@ async def online_sessions(pool: DatabasePool, user: Teacher):
     return rows(await repository.list_online_sessions(pool, user["id"], user["centre_id"]))
 
 
+@router.get("/online-sessions/google/authorize")
+async def authorize_google_meet(user: Teacher):
+    return google_drive_service.start_authorization(user)
+
+
+@router.get("/online-sessions/google/callback")
+async def google_meet_callback(
+    code: Annotated[str, Query(min_length=1)],
+    state: Annotated[str, Query(min_length=1)],
+    pool: DatabasePool,
+):
+    redirect_url = await google_drive_service.complete_authorization(
+        pool,
+        code,
+        state,
+    )
+    return RedirectResponse(redirect_url, status_code=303)
+
+
 @router.post("/online-sessions/{session_id}/start")
 async def start_online_session(
     session_id: UUID, pool: DatabasePool, user: Teacher,
@@ -171,7 +189,7 @@ async def upload_resource(
     publie: Annotated[bool, Query()] = True,
 ):
     declared_size = int(request.headers.get("x-file-size", "0") or 0)
-    max_size = get_settings().google_drive_max_upload_mb * 1024 * 1024
+    max_size = get_settings().resource_max_upload_mb * 1024 * 1024
     if declared_size > max_size:
         raise HTTPException(413, "Le fichier dépasse la taille autorisée.")
     content = await request.body()
@@ -187,49 +205,11 @@ async def upload_resource(
         pool,
         user,
         payload,
-        BytesIO(content),
+        content,
         filename,
         request.headers.get("content-type", "application/octet-stream"),
         len(content),
     )
-
-
-@router.get("/resources/google/status")
-async def google_drive_status(
-    pool: DatabasePool,
-    user: TeachingStaff,
-):
-    return await google_drive_service.connection_status(
-        pool,
-        user["centre_id"],
-    )
-
-
-@router.get("/resources/google/authorize")
-async def authorize_google_drive(user: TeachingStaff):
-    return google_drive_service.start_authorization(user)
-
-
-@router.get("/resources/google/callback")
-async def google_drive_callback(
-    code: Annotated[str, Query(min_length=1)],
-    state: Annotated[str, Query(min_length=1)],
-    pool: DatabasePool,
-):
-    redirect_url = await google_drive_service.complete_authorization(
-        pool,
-        code,
-        state,
-    )
-    return RedirectResponse(redirect_url, status_code=303)
-
-
-@router.delete("/resources/google/connection")
-async def disconnect_google_drive(
-    pool: DatabasePool,
-    user: TeachingStaff,
-):
-    return await google_drive_service.disconnect(pool, user["centre_id"])
 
 
 @router.get("/resources/{resource_id}/download")
@@ -246,11 +226,7 @@ async def download_resource(
     )
     if not item:
         raise HTTPException(404, "Ressource accessible introuvable.")
-    return await google_drive_response(
-        pool,
-        user["centre_id"],
-        item["storage_key"],
-    )
+    return database_file_response(item, inline=False)
 
 
 @router.get("/resources/{resource_id}/preview")
@@ -267,11 +243,7 @@ async def preview_resource(
     )
     if not item:
         raise HTTPException(404, "Ressource accessible introuvable.")
-    return await google_drive_thumbnail_response(
-        pool,
-        user["centre_id"],
-        item["storage_key"],
-    )
+    return database_thumbnail_response(item)
 
 
 @router.get("/evaluations")

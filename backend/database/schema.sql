@@ -341,6 +341,8 @@ CREATE TABLE ressources (
   titre varchar(200) NOT NULL,
   description text,
   storage_key text,
+  file_name varchar(255),
+  file_content bytea,
   mime_type varchar(120),
   taille_octets bigint CHECK (taille_octets >= 0),
   duree_minutes integer CHECK (duree_minutes >= 0),

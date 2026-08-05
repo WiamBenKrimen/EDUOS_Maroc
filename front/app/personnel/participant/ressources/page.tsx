@@ -82,9 +82,13 @@ function ResourceMedia({ item, eager = false }: { item: LibraryItem; eager?: boo
       return
     }
 
-    if (!item.storageKey.startsWith('gdrive:')) return
+    if (!item.storageKey.startsWith('db:')) return
     setLoading(true)
-    void api.download(`/participant/resources/${item.id}/preview`)
+    const controller = new AbortController()
+    const previewPath = kind === 'image'
+      ? `/participant/resources/${item.id}/preview`
+      : `/participant/resources/${item.id}/download`
+    void api.download(previewPath, { signal: controller.signal })
       .then(blob => {
         if (cancelled) return
         objectUrl = URL.createObjectURL(blob)
@@ -95,16 +99,19 @@ function ResourceMedia({ item, eager = false }: { item: LibraryItem; eager?: boo
 
     return () => {
       cancelled = true
+      controller.abort()
       if (objectUrl) URL.revokeObjectURL(objectUrl)
     }
   }, [item.id, item.kind, item.storageKey, kind, visible])
 
   return <div ref={rootRef} className={`resource-media is-${kind}`}>
-    {!failed && previewUrl && kind === 'video' && /^https?:\/\//.test(item.storageKey ?? '')
+    {!failed && previewUrl && kind === 'video'
       ? <video src={previewUrl} muted playsInline preload="metadata" aria-label={`Aperçu vidéo : ${item.title}`} onLoadedMetadata={event => { event.currentTarget.currentTime = .1 }} onError={() => setFailed(true)} />
-      : !failed && previewUrl
-        ? <img src={previewUrl} alt={`Aperçu de ${item.title}`} onError={() => setFailed(true)} />
-        : <MediaFallback item={item} />}
+      : !failed && previewUrl && kind === 'pdf'
+        ? <iframe src={`${previewUrl}#toolbar=0&navpanes=0&view=FitH`} title={`Aperçu du document : ${item.title}`} tabIndex={-1} />
+        : !failed && previewUrl
+          ? <img src={previewUrl} alt={`Aperçu de ${item.title}`} onError={() => setFailed(true)} />
+          : <MediaFallback item={item} />}
     {loading && <div className="resource-media-loading" aria-label="Chargement de l’aperçu"><SpinnerGap size={24} /></div>}
     {kind === 'video' && <span className="resource-play" aria-hidden="true"><Play size={20} weight="fill" /></span>}
   </div>

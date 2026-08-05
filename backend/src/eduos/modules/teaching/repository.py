@@ -357,7 +357,8 @@ async def get_resource_for_teacher(
 ) -> asyncpg.Record | None:
     return await pool.fetchrow(
         """
-        SELECT r.id,r.storage_key,r.mime_type,r.titre
+        SELECT r.id,r.storage_key,r.file_name,r.file_content,
+               r.mime_type,r.titre
           FROM ressources r
           JOIN cohortes c ON c.id=r.cohorte_id
           JOIN formations f ON f.id=c.formation_id
@@ -377,16 +378,19 @@ async def create_resource(
     resource_id: UUID,
     payload: ResourceInput,
     storage_key: str,
+    file_name: str | None = None,
+    file_content: bytes | None = None,
 ) -> asyncpg.Record | None:
     return await pool.fetchrow(
         """
         INSERT INTO ressources(
           id,centre_id,formation_id,cohorte_id,type,titre,description,
-          storage_key,mime_type,taille_octets,duree_minutes,semaine,
+          storage_key,file_name,file_content,mime_type,taille_octets,
+          duree_minutes,semaine,
           publie,nouveau,created_by
         )
         SELECT $3,$2,c.formation_id,c.id,$5::resource_type,$6,$7,
-               $8,$9,$10,$11,$12,$13,true,$1
+               $8,$14,$15,$9,$10,$11,$12,$13,true,$1
           FROM cohortes c
           JOIN formations f ON f.id=c.formation_id
           JOIN intervenants iv ON iv.id=c.intervenant_id
@@ -406,6 +410,8 @@ async def create_resource(
         payload.duree_minutes,
         payload.semaine,
         payload.publie,
+        file_name,
+        file_content,
     )
 
 

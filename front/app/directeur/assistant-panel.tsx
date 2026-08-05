@@ -159,10 +159,11 @@ export default function DirectorAssistant() {
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
+    if (!open || status) return
     api.get<AssistantStatus>('/director/assistant/status')
       .then(setStatus)
       .catch(() => setStatus({ configured: false, provider: 'NVIDIA NIM', model: '', capabilities: [] }))
-  }, [])
+  }, [open, status])
 
   useEffect(() => {
     if (!open) return
@@ -294,21 +295,22 @@ export default function DirectorAssistant() {
         <span className={styles.triggerCopy}><strong>EDU IA</strong><small>Copilote Direction</small></span>
       </button>
 
+      {open && <>
       <button
         type="button"
-        className={`${styles.backdrop} ${open ? styles.backdropOpen : ''}`}
+        className={`${styles.backdrop} ${styles.backdropOpen}`}
         onClick={() => setOpen(false)}
         aria-label="Fermer le copilote"
-        tabIndex={open ? 0 : -1}
+        tabIndex={0}
       />
 
       <section
         id="director-ai-panel"
-        className={`${styles.panel} ${open ? styles.panelOpen : ''} ${maximized ? styles.panelMaximized : ''}`}
+        className={`${styles.panel} ${styles.panelOpen} ${maximized ? styles.panelMaximized : ''}`}
         role="dialog"
         aria-modal="true"
         aria-label="Copilote Direction EDUOS"
-        aria-hidden={!open}
+        aria-hidden={false}
       >
         <header className={styles.header}>
           <div className={styles.brandmark}><Sparkle size={21} weight="fill" /></div>
@@ -499,6 +501,7 @@ export default function DirectorAssistant() {
           </main>
         </div>
       </section>
+      </>}
     </>
   )
 }

@@ -303,7 +303,8 @@ async def get_resource_for_participant(
 ) -> asyncpg.Record | None:
     return await pool.fetchrow(
         """
-        SELECT r.id,r.storage_key,r.mime_type,r.titre
+        SELECT r.id,r.storage_key,r.file_name,r.file_content,
+               r.mime_type,r.titre
           FROM participants p
           JOIN inscriptions i
             ON i.participant_id=p.id AND i.statut='confirmee'

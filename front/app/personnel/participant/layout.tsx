@@ -5,7 +5,8 @@ import { usePathname } from 'next/navigation'
 import { ReactNode, useEffect, useState } from 'react'
 import LogoutButton from '../../logout-button'
 import { api } from '@/lib/api-client'
-import type { ParticipantDashboard } from '@/lib/participant-types'
+import { getUser } from '@/lib/auth'
+import type { ParticipantNotification, ParticipantProfile } from '@/lib/participant-types'
 
 const navItems = [
   {
@@ -92,18 +93,24 @@ export default function ParticipantLayout({ children }: { children: ReactNode })
   const [menuOpen, setMenuOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [showNotifs, setShowNotifs] = useState(false)
-  const [dashboard, setDashboard] = useState<ParticipantDashboard | null>(null)
+  const [notifications, setNotifications] = useState<ParticipantNotification[]>([])
+  const [profile, setProfile] = useState<ParticipantProfile | null>(null)
+  const user = getUser()
 
-  useEffect(() => setMenuOpen(false), [pathname])
   useEffect(() => {
-    api.get<ParticipantDashboard>('/participant/dashboard').then(setDashboard).catch(() => undefined)
+    setMenuOpen(false)
+    setShowNotifs(false)
   }, [pathname])
 
+  useEffect(() => {
+    api.get<ParticipantNotification[]>('/participant/notifications').then(setNotifications).catch(() => undefined)
+    api.get<ParticipantProfile>('/participant/account').then(setProfile).catch(() => undefined)
+  }, [])
+
   const isActive = (item: typeof navItems[0]) => pathname.startsWith(item.href)
-  const profile = dashboard?.profile
-  const unread = dashboard?.stats.notifications_non_lues ?? 0
-  const fullName = profile ? `${profile.prenom} ${profile.nom}` : 'Participant'
-  const initials = profile ? `${profile.prenom[0] ?? ''}${profile.nom[0] ?? ''}`.toUpperCase() : 'P'
+  const unread = notifications.filter(notification => !notification.read_at).length
+  const fullName = user?.nom ?? 'Participant'
+  const initials = fullName.split(' ').map(part => part[0] ?? '').join('').slice(0, 2).toUpperCase() || 'P'
   const isDashboard = pathname === '/personnel/participant/mon-espace'
 
   return (
@@ -178,7 +185,7 @@ export default function ParticipantLayout({ children }: { children: ReactNode })
                   <div style={{ fontWeight: 800, fontSize: '.84rem', color: '#0F2347', marginBottom: 8, borderBottom: '1px solid #F1F5F9', paddingBottom: 6 }}>
                     Notifications Apprenant
                   </div>
-                  {dashboard?.notifications.length ? dashboard.notifications.slice(0, 3).map(notification => (
+                  {notifications.length ? notifications.slice(0, 3).map(notification => (
                     <div key={notification.id} style={{ fontSize: '.78rem', color: '#475569', padding: '6px 0', borderBottom: '1px solid #F8FAFC' }}>
                       <strong style={{ display: 'block', color: '#0F2347' }}>{notification.titre}</strong>
                       {notification.message}

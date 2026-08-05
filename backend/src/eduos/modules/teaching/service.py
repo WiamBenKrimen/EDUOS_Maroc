@@ -1,23 +1,16 @@
 from datetime import date
-from typing import Any, BinaryIO
+from typing import Any
 from uuid import UUID, uuid4
 
 from reportlab.pdfgen import canvas
 
 import asyncpg
 from fastapi import HTTPException
-from starlette.concurrency import run_in_threadpool
 
 from eduos.core.config import get_settings
-from eduos.integrations.storage.google_drive import (
-    DriveNotConfiguredError,
-    DriveStorageError,
-    drive_storage_key,
-)
 from eduos.modules.common import rows
 from eduos.modules.google_drive import service as google_drive_service
 from eduos.modules.teaching import repository
-from eduos.modules.google_drive import service as google_drive_service
 from eduos.modules.teaching.schemas import (
     AttendanceSheetInput,
     EvaluationInput,
@@ -159,18 +152,18 @@ async def create_uploaded_resource(
     pool: asyncpg.Pool,
     user: asyncpg.Record,
     payload: ResourceInput,
-    stream: BinaryIO,
+    content: bytes,
     filename: str,
     mime_type: str,
     size: int,
 ) -> dict:
     settings = get_settings()
-    max_size = settings.google_drive_max_upload_mb * 1024 * 1024
+    max_size = settings.resource_max_upload_mb * 1024 * 1024
     if size > max_size:
         raise HTTPException(
             413,
             "Le fichier dépasse la limite de "
-            f"{settings.google_drive_max_upload_mb} Mo.",
+            f"{settings.resource_max_upload_mb} Mo.",
         )
     if size == 0:
         raise HTTPException(422, "Le fichier envoyé est vide.")
@@ -191,41 +184,26 @@ async def create_uploaded_resource(
     }:
         raise HTTPException(415, "Ce type de fichier n'est pas autorisé.")
 
-    storage = await google_drive_service.storage_for_centre(
-        pool,
-        user["centre_id"],
-    )
-    try:
-        uploaded = await run_in_threadpool(
-            storage.upload,
-            stream,
-            filename,
-            mime_type,
-            str(payload.cohorte_id),
-        )
-    except DriveNotConfiguredError as exc:
-        raise HTTPException(503, str(exc)) from exc
-    except DriveStorageError as exc:
-        raise HTTPException(502, str(exc)) from exc
-
-    storage_key = drive_storage_key(uploaded.file_id)
+    resource_id = uuid4()
+    storage_key = f"db:{resource_id}"
     stored_payload = payload.model_copy(
         update={
             "storage_key": storage_key,
-            "mime_type": uploaded.mime_type,
-            "taille_octets": uploaded.size if uploaded.size is not None else size,
+            "mime_type": mime_type,
+            "taille_octets": size,
         }
     )
     item = await repository.create_resource(
         pool,
         user["id"],
         user["centre_id"],
-        uuid4(),
+        resource_id,
         stored_payload,
         storage_key,
+        filename,
+        content,
     )
     if not item:
-        await run_in_threadpool(storage.delete, uploaded.file_id)
         raise HTTPException(404, "Cohorte affectée introuvable.")
     return dict(item)
 

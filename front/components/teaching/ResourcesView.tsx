@@ -36,12 +36,6 @@ type Resource = {
   formation: string
   auteur: string
 }
-type DriveStatus = {
-  configured: boolean
-  connected: boolean
-  account_email: string | null
-}
-
 const MAX_FILE_SIZE = 50 * 1024 * 1024
 const PAGE_SIZE = 6
 const typeLabels: Record<ResourceType, string> = {
@@ -95,9 +89,10 @@ function TeachingResourceMedia({ item }: { item: Resource }) {
       setPreviewUrl(item.storage_key)
       return
     }
-    if (!item.storage_key.startsWith('gdrive:')) return
+    if (!item.storage_key.startsWith('db:')) return
     setLoading(true)
-    void api.download(`/personnel/resources/${item.id}/preview`)
+    const controller = new AbortController()
+    void api.download(`/personnel/resources/${item.id}/preview`, { signal: controller.signal })
       .then(blob => {
         if (cancelled) return
         objectUrl = URL.createObjectURL(blob)
@@ -107,6 +102,7 @@ function TeachingResourceMedia({ item }: { item: Resource }) {
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => {
       cancelled = true
+      controller.abort()
       if (objectUrl) URL.revokeObjectURL(objectUrl)
     }
   }, [item.id, item.storage_key, kind, visible])
@@ -133,13 +129,6 @@ export default function ResourcesView() {
   const [file, setFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
-  const [uploadPhase, setUploadPhase] = useState<'upload' | 'drive'>('upload')
-  const [connecting, setConnecting] = useState(false)
-  const [drive, setDrive] = useState<DriveStatus>({
-    configured: false,
-    connected: false,
-    account_email: null,
-  })
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [form, setForm] = useState({
@@ -152,14 +141,12 @@ export default function ResourcesView() {
 
   const load = async () => {
     try {
-      const [items, cohortItems, driveStatus] = await Promise.all([
+      const [items, cohortItems] = await Promise.all([
         api.get<Resource[]>('/personnel/resources'),
         api.get<Cohort[]>('/personnel/cohorts'),
-        api.get<DriveStatus>('/personnel/resources/google/status'),
       ])
       setResources(items)
       setCohorts(cohortItems)
-      setDrive(driveStatus)
       setForm(current => ({
         ...current,
         cohorte_id: current.cohorte_id || cohortItems[0]?.id || '',
@@ -170,13 +157,6 @@ export default function ResourcesView() {
   }
 
   useEffect(() => { void load() }, [])
-
-  useEffect(() => {
-    if (new URLSearchParams(window.location.search).get('drive') === 'connected') {
-      setNotice('Google Drive est connecté. Vous pouvez maintenant publier vos fichiers.')
-      window.history.replaceState({}, '', window.location.pathname)
-    }
-  }, [])
 
   const filtered = useMemo(
     () => resources.filter(item =>
@@ -192,12 +172,8 @@ export default function ResourcesView() {
   useEffect(() => { if (page > pageCount) setPage(pageCount) }, [page, pageCount])
 
   async function create() {
-    if (!drive.connected) {
-      setError('Connectez d’abord votre compte Google Drive.')
-      return
-    }
     if (!file) {
-      setError('Sélectionnez un fichier à envoyer sur Google Drive.')
+      setError('Sélectionnez un fichier à enregistrer.')
       return
     }
     if (file.size > MAX_FILE_SIZE) {
@@ -207,7 +183,6 @@ export default function ResourcesView() {
     setError('')
     setUploading(true)
     setUploadProgress(0)
-    setUploadPhase('upload')
     try {
       await api.uploadFile('/personnel/resources/upload', file, {
         cohorte_id: form.cohorte_id,
@@ -218,11 +193,10 @@ export default function ResourcesView() {
       }, (loaded, total) => {
         const progress = Math.min(100, Math.round((loaded / total) * 100))
         setUploadProgress(progress)
-        if (progress >= 100) setUploadPhase('drive')
       })
       setShowForm(false)
       setFile(null)
-      setNotice('Fichier ajouté à Google Drive et publié pour tous les participants de cette cohorte.')
+      setNotice('Fichier enregistré et publié pour les participants de cette cohorte.')
       setForm(current => ({ ...current, titre: '', description: '' }))
       await load()
     } catch (error) {
@@ -230,19 +204,6 @@ export default function ResourcesView() {
     } finally {
       setUploading(false)
       setUploadProgress(0)
-      setUploadPhase('upload')
-    }
-  }
-
-  async function connectDrive() {
-    setError('')
-    setConnecting(true)
-    try {
-      const result = await api.get<{ authorization_url: string }>('/personnel/resources/google/authorize')
-      window.location.assign(result.authorization_url)
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Impossible de démarrer la connexion Google.')
-      setConnecting(false)
     }
   }
 
@@ -317,17 +278,9 @@ export default function ResourcesView() {
           <button className="btn btn-ghost btn-sm" onClick={() => setShowForm(false)} disabled={uploading}>Fermer</button>
         </div>
 
-        {drive.connected ? <div style={{ marginTop: 16, padding: 11, borderRadius: 8, background: '#ECFDF5', color: '#047857', fontSize: 12, fontWeight: 700 }}>
-          Google Drive connecté{drive.account_email ? ` · ${drive.account_email}` : ''}
-        </div> : <div style={{ marginTop: 16, padding: 14, borderRadius: 8, background: '#F8FAFC', border: '1px solid #E2E8F0' }}>
-          <strong style={{ display: 'block', color: '#0F2347', fontSize: 13 }}>Connecter votre compte Google Drive</strong>
-          <p style={{ margin: '5px 0 10px', color: '#64748B', fontSize: 12 }}>
-            {drive.configured ? 'EDUOS créera son dossier privé dans votre Mon Drive.' : 'Le client OAuth Google doit d’abord être configuré par l’administrateur.'}
-          </p>
-          <button className="btn btn-outline btn-sm" onClick={() => void connectDrive()} disabled={!drive.configured || connecting}>
-            {connecting ? 'Connexion…' : 'Connecter Google Drive'}
-          </button>
-        </div>}
+        <div style={{ marginTop: 16, padding: 11, borderRadius: 8, background: '#ECFDF5', color: '#047857', fontSize: 12, fontWeight: 700 }}>
+          Le fichier sera enregistré directement dans EDUOS et publié pour la cohorte sélectionnée.
+        </div>
 
         <div style={{ display: 'grid', gap: 12, marginTop: 18 }}>
           <label style={{ fontSize: 12, color: '#475569' }}>
@@ -351,19 +304,19 @@ export default function ResourcesView() {
             <textarea value={form.description} onChange={event => setForm(current => ({ ...current, description: event.target.value }))} rows={3} style={{ display: 'block', width: '100%', marginTop: 5, padding: 10, border: '1px solid #CBD5E1', borderRadius: 8 }} />
           </label>
           <label style={{ fontSize: 12, color: '#475569' }}>
-            Fichier Google Drive
-            <input type="file" onChange={event => selectFile(event.target.files?.[0] ?? null)} disabled={!drive.connected || uploading} style={{ display: 'block', width: '100%', marginTop: 5, padding: 10, border: '1px solid #CBD5E1', borderRadius: 8, background: '#fff' }} />
+            Fichier
+            <input type="file" onChange={event => selectFile(event.target.files?.[0] ?? null)} disabled={uploading} style={{ display: 'block', width: '100%', marginTop: 5, padding: 10, border: '1px solid #CBD5E1', borderRadius: 8, background: '#fff' }} />
             <small style={{ display: 'block', marginTop: 5, color: '#64748B' }}>PDF, document, image, archive, audio ou vidéo - 50 Mo maximum.</small>
             {uploading && <small role="status" style={{ display: 'block', marginTop: 5, color: '#1D4E89', fontWeight: 700 }}>
-              {uploadPhase === 'upload' ? `Envoi au serveur : ${uploadProgress}%` : 'Fichier reçu. Enregistrement dans Google Drive…'}
+              {`Enregistrement dans EDUOS : ${uploadProgress}%`}
             </small>}
           </label>
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 18 }}>
           <button className="btn btn-ghost" onClick={() => setShowForm(false)} disabled={uploading}>Annuler</button>
-          <button className="btn-navy" onClick={create} disabled={!drive.connected || uploading || !file || file.size > MAX_FILE_SIZE || !form.cohorte_id || form.titre.trim().length < 2}>
-            {uploading ? (uploadPhase === 'upload' ? `Envoi ${uploadProgress}%…` : 'Enregistrement…') : 'Publier'}
+          <button className="btn-navy" onClick={create} disabled={uploading || !file || file.size > MAX_FILE_SIZE || !form.cohorte_id || form.titre.trim().length < 2}>
+            {uploading ? `Enregistrement ${uploadProgress}%…` : 'Publier'}
           </button>
         </div>
       </section>

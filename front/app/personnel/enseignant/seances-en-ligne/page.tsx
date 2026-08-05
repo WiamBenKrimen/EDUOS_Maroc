@@ -35,7 +35,7 @@ export default function OnlineSessionsPage() {
   async function connectGoogle() {
     setError('')
     try {
-      const result = await api.get<{ authorization_url: string }>('/personnel/resources/google/authorize')
+      const result = await api.get<{ authorization_url: string }>('/personnel/online-sessions/google/authorize')
       window.location.assign(result.authorization_url)
     } catch (e) { setError(e instanceof Error ? e.message : 'Connexion Google impossible.') }
   }

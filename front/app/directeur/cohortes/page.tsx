@@ -1,4 +1,5 @@
 'use client'
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import SearchFilterBar from '../search-filter-bar'
 import { api } from '../../../lib/api-client'
@@ -9,12 +10,13 @@ const GOLD = '#D97706'
 
 
 function mapCohorte(item: any) {
-  const debut = item.date_debut ? new Intl.DateTimeFormat('fr-FR', { month: 'short', year: 'numeric' }).format(new Date(item.date_debut)) : '—'
+  const debut = item.date_debut ? new Intl.DateTimeFormat('fr-FR', { month: 'short', year: 'numeric' }).format(new Date(item.date_debut)) : 'Non renseigné'
   return {
     id: item.id,
     formation_id: item.formation_id ?? '',
     intervenant_id: item.intervenant_id ?? '',
     name: item.nom,
+    formation: item.formation_titre ?? item.formation ?? 'Formation non renseignée',
     formateur: item.formateur ?? 'Non affecté',
     eleves: Number(item.inscrits ?? 0),
     max: Number(item.capacite),
@@ -37,6 +39,8 @@ export default function CohortesPage() {
   const [formations, setFormations] = useState<any[]>([])
   const [intervenants, setIntervenants] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [catalogLoading, setCatalogLoading] = useState(false)
+  const [catalogsLoaded, setCatalogsLoaded] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   
@@ -56,14 +60,8 @@ export default function CohortesPage() {
   const [formError, setFormError] = useState('')
 
   useEffect(() => {
-    Promise.all([
-      api.get<any[]>('/director/cohortes'),
-      api.get<any[]>('/director/formations'),
-      api.get<any[]>('/director/personnel'),
-    ]).then(([cohs, forms, personnel]) => {
+    api.get<any[]>('/director/cohortes').then((cohs) => {
       setCohortes(cohs.map(mapCohorte))
-      setFormations(forms)
-      setIntervenants(personnel.filter(item => ['formateur', 'enseignant'].includes(item.personnel_fonction) && item.intervenant_id))
     }).catch(err => triggerToast(err instanceof Error ? err.message : 'Impossible de charger les cohortes.'))
      .finally(() => setLoading(false))
   }, [])
@@ -71,6 +69,34 @@ export default function CohortesPage() {
   const triggerToast = (msg: string) => {
     setToast(msg)
     setTimeout(() => setToast(null), 3000)
+  }
+
+  const loadCatalogs = async () => {
+    if (catalogsLoaded || catalogLoading) return
+    setCatalogLoading(true)
+    try {
+      const [forms, personnel] = await Promise.all([
+        api.get<any[]>('/director/formations'),
+        api.get<any[]>('/director/personnel'),
+      ])
+      setFormations(forms)
+      setIntervenants(personnel.filter(item => ['formateur', 'enseignant'].includes(item.personnel_fonction) && item.intervenant_id))
+      setCatalogsLoaded(true)
+    } catch (error) {
+      triggerToast(error instanceof Error ? error.message : 'Impossible de charger les formations et le personnel.')
+    } finally {
+      setCatalogLoading(false)
+    }
+  }
+
+  const openAddModal = () => {
+    setShowAddModal(true)
+    void loadCatalogs()
+  }
+
+  const openEditModal = (cohorte: any) => {
+    setEditCohorte(cohorte)
+    void loadCatalogs()
   }
 
   const handleAddCohorte = async (e: React.FormEvent) => {
@@ -90,7 +116,8 @@ export default function CohortesPage() {
         intervenant_id: newIntervenantId || null,
       })
       const assigned = intervenants.find(item => item.intervenant_id === newIntervenantId)
-      setCohortes(prev => [mapCohorte({ ...created, inscrits: 0, formateur: assigned ? `${assigned.prenom} ${assigned.nom}` : 'Non affecté', formation_id: newFormationId }), ...prev])
+      const formation = formations.find(item => item.id === newFormationId)
+      setCohortes(prev => [mapCohorte({ ...created, inscrits: 0, formateur: assigned ? `${assigned.prenom} ${assigned.nom}` : 'Non affecté', formation_id: newFormationId, formation_titre: formation?.titre }), ...prev])
       setShowAddModal(false)
       triggerToast(`Cohorte "${newName}" créée avec succès !`)
       setNewName(''); setNewFormationId(''); setNewIntervenantId(''); setNewSalle(''); setNewDateDebut(''); setNewDateFin('')
@@ -118,7 +145,8 @@ export default function CohortesPage() {
 
   const filtered = cohortes.filter(c => 
     c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    c.formateur.toLowerCase().includes(searchQuery.toLowerCase())
+    c.formateur.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    c.formation.toLowerCase().includes(searchQuery.toLowerCase())
   )
   
   const totalEleves = filtered.reduce((sum, c) => sum + c.eleves, 0)
@@ -157,27 +185,32 @@ export default function CohortesPage() {
             <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 900, fontSize: 24, color: NAVY, marginBottom: 4 }}>Cohortes & Groupes</h1>
             <p style={{ fontSize: 13.5, color: '#64748b' }}>Gérez la planification des groupes de formation et suivez les taux de remplissage.</p>
           </div>
-          <button
-            onClick={() => setShowAddModal(true)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '10px 18px',
-              borderRadius: 9,
-              border: 'none',
-              background: BLUE,
-              color: '#fff',
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-              fontWeight: 800,
-              fontSize: '0.82rem',
-              cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(27,58,107,0.2)'
-            }}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Nouvelle cohorte
-          </button>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            <Link href="/directeur/formations" style={{ padding: '10px 16px', borderRadius: 9, border: '1px solid #CBD5E1', background: '#fff', color: NAVY, fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, fontSize: '0.82rem', textDecoration: 'none' }}>
+              Gérer les formations
+            </Link>
+            <button
+              onClick={openAddModal}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '10px 18px',
+                borderRadius: 9,
+                border: 'none',
+                background: BLUE,
+                color: '#fff',
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+                fontWeight: 800,
+                fontSize: '0.82rem',
+                cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(27,58,107,0.2)'
+              }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Nouvelle cohorte
+            </button>
+          </div>
         </div>
         <SearchFilterBar value={searchQuery} onChange={setSearchQuery} placeholder="Rechercher un groupe ou un formateur..." resultCount={filtered.length} />
       </div>
@@ -198,7 +231,9 @@ export default function CohortesPage() {
       </div>
 
       {/* Cohorts Grid */}
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '40px 20px', color: '#64748b', fontSize: 14 }}>Chargement des cohortes...</div>
+      ) : filtered.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '40px 20px', color: '#64748b' }}>
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ margin: '0 auto 12px', opacity: 0.5 }}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           <p style={{ fontSize: 14, margin: '8px 0' }}>Aucune cohorte trouvée</p>
@@ -242,6 +277,10 @@ export default function CohortesPage() {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12.5, color: '#475569', marginBottom: 18 }}>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <span style={{ color: '#94A3B8', fontWeight: 800 }}>F</span>
+                    <span>Formation : <strong>{c.formation}</strong></span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     <span>Formateur : <strong>{c.formateur}</strong></span>
                   </div>
@@ -260,7 +299,7 @@ export default function CohortesPage() {
                   Voir le groupe
                 </button>
                 <button
-                  onClick={() => setEditCohorte(c)}
+                  onClick={() => openEditModal(c)}
                   style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: BLUE, color: '#fff', fontWeight: 700, fontSize: '.78rem', cursor: 'pointer' }}
                 >
                   Éditer
@@ -296,7 +335,7 @@ export default function CohortesPage() {
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 4 }}>Nom de la cohorte</label>
                 <input
                   type="text"
-                  placeholder="Ex: Anglais B2 — Soir"
+                  placeholder="Ex: Anglais B2 - Soir"
                   value={newName}
                   onChange={e => setNewName(e.target.value)}
                   required
@@ -305,23 +344,31 @@ export default function CohortesPage() {
               </div>
 
               <div style={{ marginBottom: 14 }}>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 4 }}>Formation</label>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 4 }}>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: NAVY }}>Formation</label>
+                  <Link href="/directeur/formations" style={{ color: BLUE, fontSize: 11, fontWeight: 800, textDecoration: 'none' }}>Ajouter une formation</Link>
+                </div>
                 <select
                   value={newFormationId}
                   onChange={e => setNewFormationId(e.target.value)}
                   required
                   style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, boxSizing: 'border-box', background: '#fff' }}
                 >
-                  <option value="">— Sélectionner une formation —</option>
+                  <option value="">Sélectionner une formation</option>
                   {formations.map((f: any) => <option key={f.id} value={f.id}>{f.titre} ({f.prix_mensuel} DH/mois)</option>)}
                 </select>
+                {!formations.length && (
+                  <div style={{ marginTop: 8, padding: '9px 11px', borderRadius: 8, background: '#FFF7ED', color: '#9A3412', fontSize: 11.5, lineHeight: 1.45 }}>
+                    Aucune formation n'est disponible. Créez d'abord une formation pour pouvoir rattacher cette cohorte.
+                  </div>
+                )}
               </div>
 
               <div style={{ marginBottom: 14 }}>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 4 }}>Formateur / Enseignant affecté</label>
                 <select value={newIntervenantId} onChange={e => setNewIntervenantId(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, boxSizing: 'border-box', background: '#fff' }}>
-                  <option value="">— Affecter plus tard —</option>
-                  {intervenants.map((item: any) => <option key={item.intervenant_id} value={item.intervenant_id}>{item.prenom} {item.nom} — {item.personnel_fonction}</option>)}
+                  <option value="">Affecter plus tard</option>
+                  {intervenants.map((item: any) => <option key={item.intervenant_id} value={item.intervenant_id}>{item.prenom} {item.nom} - {item.personnel_fonction}</option>)}
                 </select>
               </div>
 
@@ -359,7 +406,8 @@ export default function CohortesPage() {
                 </button>
                 <button
                   type="submit"
-                  style={{ flex: 1, padding: '11px', borderRadius: 8, border: 'none', background: BLUE, color: '#fff', fontWeight: 800, fontSize: 13, cursor: 'pointer' }}
+                  disabled={!formations.length}
+                  style={{ flex: 1, padding: '11px', borderRadius: 8, border: 'none', background: formations.length ? BLUE : '#CBD5E1', color: formations.length ? '#fff' : '#64748B', fontWeight: 800, fontSize: 13, cursor: formations.length ? 'pointer' : 'not-allowed' }}
                 >
                   Créer la cohorte
                 </button>
@@ -391,6 +439,7 @@ export default function CohortesPage() {
             <div style={{ padding: 24 }}>
               <div style={{ background: '#F8FAFC', borderRadius: 10, padding: 16, border: '1px solid #E2E8F0', marginBottom: 20 }}>
                 <div style={{ fontSize: 13, color: '#475569', marginBottom: 6 }}>Formateur référent : <strong>{selectedCohorte.formateur}</strong></div>
+                <div style={{ fontSize: 13, color: '#475569', marginBottom: 6 }}>Formation : <strong>{selectedCohorte.formation}</strong></div>
                 <div style={{ fontSize: 13, color: '#475569', marginBottom: 6 }}>Planning : <strong>{selectedCohorte.sessions}</strong></div>
                 <div style={{ fontSize: 13, color: '#475569' }}>Remplissage : <strong>{selectedCohorte.eleves} / {selectedCohorte.max} apprenants</strong></div>
               </div>
@@ -461,8 +510,8 @@ export default function CohortesPage() {
               <div style={{ marginBottom: 14 }}>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 4 }}>Formateur / Enseignant affecté</label>
                 <select value={editCohorte.intervenant_id} onChange={e => { const assigned = intervenants.find(item => item.intervenant_id === e.target.value); setEditCohorte({ ...editCohorte, intervenant_id: e.target.value, formateur: assigned ? `${assigned.prenom} ${assigned.nom}` : editCohorte.formateur }) }} style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, background: '#fff' }}>
-                  <option value="">— Conserver l’affectation actuelle —</option>
-                  {intervenants.map((item: any) => <option key={item.intervenant_id} value={item.intervenant_id}>{item.prenom} {item.nom} — {item.personnel_fonction}</option>)}
+                  <option value="">Conserver l’affectation actuelle</option>
+                  {intervenants.map((item: any) => <option key={item.intervenant_id} value={item.intervenant_id}>{item.prenom} {item.nom} - {item.personnel_fonction}</option>)}
                 </select>
               </div>
 
